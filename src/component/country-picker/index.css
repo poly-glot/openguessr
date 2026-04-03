@@ -1,0 +1,124 @@
+.country-picker {
+  padding: 20px 40px;
+}
+
+.country-picker__continent {
+  margin-bottom: 16px;
+}
+
+.country-picker__continent-name {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.country-picker__flags {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.country-picker__flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 4px;
+  cursor: pointer;
+  background: #fff;
+  font-size: 0.82rem;
+  transition: all 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.country-picker__flag:hover {
+  border-color: #888;
+  background: #f5f5f5;
+}
+
+.country-picker__flag--selected {
+  border-color: var(--brand);
+  background: #f0f0f0;
+  box-shadow: 0 0 0 2px var(--brand);
+}
+
+.country-picker__flag--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.country-picker__flag img {
+  width: 20px;
+  height: 14px;
+  object-fit: cover;
+}
+
+.country-picker__submit {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.country-picker__submit button {
+  width: 100%;
+}
+
+.country-picker__search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.country-picker__search:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 10%);
+}
+
+.country-picker__pinned {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--borderColor);
+}
+
+/* Disabled state for the whole picker */
+.country-picker--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Instructions banner */
+.country-picker__instructions {
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  background: #fff8e1;
+  border: 2px solid #f9a825;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Make country names more visible */
+.country-picker__flag-name {
+  font-weight: 500;
+  color: #222;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .country-picker {
+    padding: 16px 24px;
+  }
+}

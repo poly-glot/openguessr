@@ -1,0 +1,66 @@
+sequenceDiagram
+    actor Host
+    actor Player
+    participant App as Frontend
+    participant CF as Cloud Functions
+    participant Auth as Firebase Auth
+    participant DB as Realtime Database
+    participant GMaps as Google Maps
+
+    Note over Host,GMaps: Game Creation Flow
+
+    Host->>App: Click "Start a game"
+    App->>App: Show auth dialog
+    Host->>App: Enter username
+    App->>CF: login({ username })
+    CF->>Auth: createCustomToken(uid)
+    Auth-->>CF: token
+    CF-->>App: { token, uid }
+    App->>Auth: signInWithCustomToken(token)
+    App->>Auth: updateProfile({ displayName })
+
+    App->>CF: createGame(username)
+    CF->>DB: Set game data (5 random rounds)
+    CF->>Auth: createCustomToken(uid, { roomHost })
+    CF-->>App: { roomId, token }
+    App->>App: Update URL with roomId
+    App->>DB: listenGameChanges(roomId)
+    App->>App: Show lobby + host controls
+
+    Note over Host,GMaps: Player Joins
+
+    Host->>Player: Share game link
+    Player->>App: Open link with ?roomId=xxx
+    App->>App: Show auth dialog
+    Player->>App: Enter username
+    App->>CF: login({ username })
+    CF-->>App: { token }
+    App->>CF: joinGame(roomId, username)
+    CF->>DB: Add player to game
+    App->>DB: listenGameChanges(roomId)
+
+    Note over Host,GMaps: Gameplay Loop (per round)
+
+    Host->>App: Click "Start Game"
+    App->>CF: startGame(roomId)
+    CF->>DB: status=playing, roundStartedAt=now
+    DB-->>App: onValue → round data
+    App->>GMaps: Load Street View iframe(lat, lng)
+    App->>App: Show country picker + start timer
+
+    Player->>App: Select flag + Submit
+    App->>CF: submitGuess(roomId, round, countryCode)
+    CF->>CF: Calculate score (1000 + time bonus)
+    CF->>DB: Update player guess + score
+    DB-->>App: onValue → updated scores
+    App->>App: Show result + leaderboard update
+
+    Host->>App: Click "Next Round"
+    App->>CF: nextRound(roomId)
+    CF->>DB: Reveal answer, advance round
+
+    Note over Host,GMaps: Game Over (after 5 rounds)
+
+    CF->>DB: status=finished
+    DB-->>App: onValue → finished state
+    App->>App: Show final scores + winner

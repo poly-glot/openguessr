@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"  # Vite dev server
+      - "4000:4000"  # Firebase Emulator UI
+      - "5001:5001"  # Firebase Functions
+      - "5002:5002"  # Firebase Hosting
+      - "9001:9001"  # Database Emulator
+      - "9099:9099"  # Firebase Auth
+    volumes:
+      - ..:/workspace:cached
+      - ${HOME}/.npm:/home/vscode/.npm:cached
+      - ${HOME}/.claude:/home/vscode/.claude:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    networks:
+      - openguessr-network
+
+networks:
+  openguessr-network:
+    driver: bridge

@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+
+# Build output
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.sw[po]
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Firebase
+.firebase/
+database-coverage.html
+
+# Test results
+test-results/
+playwright-report/
+
+# Claude Code
+.claude/worktree/

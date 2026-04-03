@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>OpenGuessr - Guess the Country from Street View</title>
+    <meta name="description" content="A free, open source GeoGuessr-style game. See Street View, guess the country, challenge your friends.">
+
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+
+    <style>
+      html, body { margin: 0; height: 100dvh; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #fff; color: #222; }
+      body:has(#app-view:not([hidden])) { overflow: hidden; }
+      [hidden] { display: none !important; }
+      .site__header { border-bottom: 1px solid rgb(0 0 0 / 15%); display: flex; justify-content: space-between; align-items: center; padding: 18px 40px; flex-shrink: 0; }
+      .site__brand { font-size: 1.2rem; font-weight: 700; text-transform: uppercase; margin: 0; }
+      .site__brand a { color: inherit; text-decoration: none; }
+      .site__header-right { display: flex; align-items: center; gap: 28px; }
+      .site__header-nav a { color: #222; text-decoration: none; font-size: 0.82rem; font-weight: normal; }
+      .site__header-github { color: #222; text-decoration: none; display: flex; align-items: center; }
+      .site__header-github svg { width: 20px; height: 20px; fill: currentColor; }
+      #app-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+      #app-view[hidden] { display: none !important; }
+      .site__body { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+      .site__footer { border-top: 1px solid rgb(0 0 0 / 15%); font-size: 0.85rem; padding: 8px 40px; flex-shrink: 0; }
+      .site__footer p { margin: 0; }
+      .site__notification { align-items: center; background: #fff; border-bottom: 1px solid rgb(0 0 0 / 15%); display: flex; font-size: 0.75rem; justify-content: space-between; min-height: 48px; padding: 6px 40px; text-transform: uppercase; flex-shrink: 0; }
+    </style>
+</head>
+<body class="site">
+    <header class="site__header" aria-label="Main Header">
+        <h1 class="site__brand"><a href="/">OpenGuessr</a></h1>
+        <div class="site__header-right">
+            <nav class="site__header-nav">
+                <a href="https://github.com/nicholasgasior/openguessr" target="_blank" rel="noopener">Source</a>
+            </nav>
+            <a href="https://github.com/nicholasgasior/openguessr" class="site__header-github" target="_blank" rel="noopener" aria-label="GitHub">
+                <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- Landing Page -->
+    <div id="landing-page" class="landing-page" hidden>
+
+        <!-- Hero -->
+        <section class="hero">
+            <div class="wrap">
+                <div class="hero-layout">
+                    <div class="hero-text">
+                        <h1>Guess the country,<br>challenge your friends</h1>
+                        <p>See a Google Street View, guess which country it's from. Free, real-time, no registration needed.</p>
+                        <div>
+                            <button type="button" class="cta-button" data-action="start-game" data-cy="start-game">Start a game</button>
+                        </div>
+                    </div>
+
+                    <div class="hero-mockup">
+                        <div class="mockup-frame">
+                            <div class="mockup-header">
+                                <span class="mockup-header-brand">OpenGuessr</span>
+                                <span class="mockup-header-link">Round 1/5</span>
+                            </div>
+                            <div class="mockup-streetview">
+                                <div class="mockup-sv-placeholder">
+                                    <svg viewBox="0 0 400 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect width="400" height="200" fill="#e8e8e8"/>
+                                        <path d="M160 130 L200 80 L240 130" stroke="#999" stroke-width="2" fill="none"/>
+                                        <path d="M120 130 L175 95 L230 130" stroke="#bbb" stroke-width="1.5" fill="none"/>
+                                        <line x1="0" y1="130" x2="400" y2="130" stroke="#ccc" stroke-width="1"/>
+                                        <circle cx="350" cy="40" r="20" stroke="#ddd" stroke-width="1.5" fill="none"/>
+                                        <text x="200" y="170" text-anchor="middle" font-size="11" fill="#999" font-family="sans-serif">Street View</text>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="mockup-flags">
+                                <div class="mockup-flag">🇺🇸</div>
+                                <div class="mockup-flag">🇬🇧</div>
+                                <div class="mockup-flag mockup-flag--selected">🇫🇷</div>
+                                <div class="mockup-flag">🇩🇪</div>
+                                <div class="mockup-flag">🇯🇵</div>
+                                <div class="mockup-flag">🇧🇷</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="features-section">
+            <div class="wrap">
+                <div class="features-header">
+                    <span class="label">Why OpenGuessr</span>
+                    <h2>Geography made fun and competitive</h2>
+                    <p>No setup, no overhead. A simple game that tests your world knowledge.</p>
+                </div>
+                <div class="features-row">
+                    <div class="feature-item">
+                        <div class="feature-icon-line"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="14"/><line x1="18" y1="10" x2="18" y2="26"/><path d="M13 15c0-2.2 2.2-3 5-3s5 .8 5 3-2 2.5-5 3-5 1-5 3 2.2 3 5 3 5-.8 5-3"/></svg></div>
+                        <h3>Completely free</h3>
+                        <p>No hidden costs, no premium tiers. Unlimited games for everyone.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon-line"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg"><path d="M18 4L32 12v12L18 32 4 24V12z"/><polyline points="12,18 16,22 24,14"/></svg></div>
+                        <h3>No registration</h3>
+                        <p>Pick a username and play instantly. No sign-ups, no forms.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon-line"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="18" r="14"/><polyline points="18,10 18,18 24,22"/></svg></div>
+                        <h3>Real-time multiplayer</h3>
+                        <p>See live scores and compete head-to-head with friends in real-time.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon-line"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg"><path d="M18 4L6 10v8c0 8.4 5.1 16.2 12 18 6.9-1.8 12-9.6 12-18v-8z"/><line x1="18" y1="14" x2="18" y2="20"/><circle cx="18" cy="24" r="1"/></svg></div>
+                        <h3>Privacy first</h3>
+                        <p>No data collection, no tracking, no analytics. Your data stays yours.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon-line"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg"><polyline points="12,8 4,18 12,28"/><polyline points="24,8 32,18 24,28"/><line x1="21" y1="6" x2="15" y2="30"/></svg></div>
+                        <h3>Open source</h3>
+                        <p>Fully transparent. Inspect the code or self-host your own instance.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon-line"><svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="6" width="20" height="14" rx="2"/><line x1="3" y1="24" x2="23" y2="24"/><rect x="25" y="10" width="9" height="18" rx="2"/><line x1="25" y1="24" x2="34" y2="24"/></svg></div>
+                        <h3>Any device</h3>
+                        <p>Responsive design across desktop, tablet, and mobile browsers.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it works -->
+        <section class="concept-section">
+            <div class="wrap">
+                <div class="concept-layout">
+                    <div class="concept-text">
+                        <span class="label">How it works</span>
+                        <h2>Simple, fast, competitive</h2>
+                        <p>Drop into a Street View, figure out which country you're in, and score points for speed and accuracy. Compete with friends on a live leaderboard.</p>
+                        <ol class="concept-steps">
+                            <li><div class="concept-step-content"><h3>Create a game</h3><p>One click to start. You get a unique game link instantly.</p></div></li>
+                            <li><div class="concept-step-content"><h3>Share the link</h3><p>Send the URL to friends. They join without signing up.</p></div></li>
+                            <li><div class="concept-step-content"><h3>Guess the country</h3><p>See a Street View panorama and pick the correct country flag.</p></div></li>
+                            <li><div class="concept-step-content"><h3>See scores</h3><p>Points for correct guesses plus speed bonus. 5 rounds per game.</p></div></li>
+                        </ol>
+                    </div>
+                    <div class="concept-illustration">
+                        <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="200" cy="200" r="140" stroke="#111" stroke-width="1.5" fill="none"/>
+                            <ellipse cx="200" cy="200" rx="140" ry="50" stroke="#111" stroke-width="0.75" fill="none" opacity="0.3"/>
+                            <ellipse cx="200" cy="200" rx="50" ry="140" stroke="#111" stroke-width="0.75" fill="none" opacity="0.3"/>
+                            <line x1="60" y1="200" x2="340" y2="200" stroke="#111" stroke-width="0.75" opacity="0.3"/>
+                            <line x1="200" y1="60" x2="200" y2="340" stroke="#111" stroke-width="0.75" opacity="0.3"/>
+                            <circle cx="140" cy="160" r="6" fill="#111"/>
+                            <circle cx="260" cy="180" r="6" fill="#111"/>
+                            <circle cx="200" cy="120" r="6" fill="#111"/>
+                            <circle cx="170" cy="250" r="6" fill="#111"/>
+                            <circle cx="280" cy="230" r="6" fill="#111"/>
+                            <text x="200" y="380" font-size="10" fill="#888" font-family="sans-serif" text-anchor="middle" letter-spacing="0.12em">EXPLORE THE WORLD</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section">
+            <div class="wrap-narrow">
+                <span class="label">Ready?</span>
+                <h2>Start playing today</h2>
+                <p>No account needed. Create a game and share the link with your friends.</p>
+                <button type="button" class="cta-button" data-action="start-game">Start a game</button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <div class="wrap">
+                <div class="footer-inner">
+                    <div class="footer-brand">OpenGuessr</div>
+                    <div class="footer-links">
+                        <a href="#" data-action="start-game">Start Game</a>
+                        <a href="https://github.com/nicholasgasior/openguessr" target="_blank" rel="noopener">GitHub</a>
+                    </div>
+                </div>
+                <div class="footer-copyright">Free and open source forever.</div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- App View -->
+    <div id="app-view" hidden>
+        <main class="site__body" aria-label="Game View">
+            <div class="site__notification">
+                <div class="alert" role="alert" id="js-alert" data-cy="notification">Preparing game...</div>
+                <div class="site__toolbar" data-cy="toolbar">
+<button type="button" id="js-share-link" class="button-link" data-cy="copy">Copy & Share Link</button>
+                    <button type="button" id="js-signout" class="button-link" data-cy="signout">Sign out</button>
+                    <template class="site__host-controls">
+                        <button type="button" id="js-start-game" class="button-secondary" data-cy="start-game-btn">Start Game</button>
+                        <button type="button" id="js-next-round" class="button-secondary button-branded" data-cy="next-round" disabled>Next Round</button>
+                    </template>
+                </div>
+            </div>
+
+            <div class="game-layout">
+                <div class="game-main">
+                    <div class="round-info" id="js-round-info">
+                        <span class="round-info__round" id="js-round-label">Round 1 / 5</span>
+                        <span class="round-info__timer" id="js-timer">00:30</span>
+                    </div>
+
+                    <div class="street-view-wrap" id="js-street-view-wrap">
+                        <div class="street-view" id="js-street-view">
+                            <div class="street-view__placeholder">
+                                <img src="/assets/loading.gif" alt="Loading" width="40" height="40" />
+                                <p>Waiting for game to start...</p>
+                            </div>
+                        </div>
+                        <div class="score-display" id="js-score-display" hidden>
+                            <div class="score-display__result" id="js-score-result"></div>
+                            <div class="score-display__points" id="js-score-points"></div>
+                            <div class="score-display__answer" id="js-score-answer"></div>
+                            <div class="score-display__motivation" id="js-score-motivation"></div>
+                            <button type="button" class="score-display__close" id="js-score-close" aria-label="Close">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-picker">
+                    <div class="country-picker" id="js-country-picker">
+                        <div class="country-picker__continents" id="js-continents"></div>
+                    </div>
+                </div>
+
+                <aside class="game-sidebar">
+                    <div class="leaderboard" id="js-leaderboard">
+                        <h3 class="leaderboard__title">Leaderboard</h3>
+                        <div class="leaderboard__list" id="js-leaderboard-list"></div>
+                    </div>
+                </aside>
+            </div>
+        </main>
+
+        <footer class="site__footer" aria-label="Footer">
+            <p>OpenGuessr - Free and open source</p>
+        </footer>
+    </div>
+
+    <template id="dialogs">
+        <dialog class="dialog" id="authDialog">
+            <header class="dialog__header">
+                <div>
+                    <h1 class="no-margin">OpenGuessr</h1>
+                    <p class="dialog__tagline">Guess the country. Challenge your friends.</p>
+                </div>
+                <button type="button" class="dialog__close" data-cy="dialog-close" aria-label="Close">&#x2715;</button>
+            </header>
+            <form class="form dialog__content start-session__form">
+                <div class="dialog__instructions">
+                    <div class="form__entry">
+                        <label class="form__label" for="username">What shall we call you?</label>
+                        <input class="form__input" id="username" name="username" data-cy="username" type="text" maxlength="32" autocomplete="off">
+                        <div class="form__error" role="alert"></div>
+                    </div>
+                </div>
+                <div class="dialog__submit">
+                    <button type="submit" data-cy="submit">PLAY</button>
+                </div>
+            </form>
+        </dialog>
+    </template>
+
+    <script type="module" src="/src/index.js"></script>
+</body>
+</html>

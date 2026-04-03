@@ -1,0 +1,107 @@
+html {
+  font-size: 16px;
+}
+
+html,
+body {
+  background-color: var(--main-bg-color);
+  color: var(--main-color);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  height: 100%;
+}
+
+h1 {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+a {
+  color: var(--brand);
+  font-weight: bold;
+  text-decoration: none;
+}
+
+a:focus,
+a:hover,
+a:active {
+  text-decoration: underline;
+}
+
+button {
+  appearance: none;
+  background: var(--brand);
+  border: 1px solid var(--brand);
+  color: var(--brand-text);
+  cursor: pointer;
+  min-width: 150px;
+  padding: 10px 20px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+button[disabled] {
+  opacity: 0.3;
+}
+
+button:focus,
+button:hover,
+button:active {
+  background-color: var(--brand-highlight);
+}
+
+.button-secondary {
+  background: #d6d6d6;
+  border-color: #d6d6d6;
+  color: #000;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  min-height: 46px;
+}
+
+.button-secondary:hover,
+.button-secondary:focus {
+  color: #fff;
+}
+
+.button-branded {
+  background: #2193b0;
+  border-color: #2193b0;
+  color: #fff;
+}
+
+.button-branded:hover,
+.button-branded:focus {
+  background: #1a7a94;
+  border-color: #1a7a94;
+  color: #fff;
+}
+
+.button-link {
+  background: transparent;
+  border: 0;
+  color: #000;
+  font-weight: bold;
+  margin-right: 20px;
+  min-width: 70px;
+  padding: 0;
+}
+
+.button-link:hover,
+.button-link:focus {
+  background: transparent;
+  border: 0;
+}
+
+label {
+  display: block;
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.no-margin {
+  margin: 0;
+}

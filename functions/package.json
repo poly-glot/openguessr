@@ -1,0 +1,22 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for OpenGuessr",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.2.0",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^3.4.0"
+  },
+  "private": true
+}

@@ -1,0 +1,18 @@
+:root {
+  --main-bg-color: #fff;
+  --main-color: #222;
+  --font:
+    -apple-system,
+    blinkmacsystemfont,
+    "Segoe UI",
+    roboto,
+    "Helvetica Neue",
+    arial,
+    sans-serif;
+  --brand: #111;
+  --brand-highlight: #333;
+  --brand-text: #fff;
+  --borderColor: rgb(0 0 0 / 15%);
+  --color-correct: #16a34a;
+  --color-error: #ac1b11;
+}

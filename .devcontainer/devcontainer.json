@@ -1,0 +1,72 @@
+{
+  "name": "openguessr",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "username": "vscode",
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/dhoeric/features/google-cloud-cli:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "jdkDistro": "tem",
+      "installMaven": false,
+      "installGradle": false
+    }
+  },
+
+  "forwardPorts": [
+    5173,
+    4000,
+    5001,
+    5002,
+    9001,
+    9099
+  ],
+  "portsAttributes": {
+    "5173": { "label": "Vite Dev Server", "onAutoForward": "openBrowser" },
+    "4000": { "label": "Firebase Emulator UI", "onAutoForward": "notify" },
+    "5001": { "label": "Firebase Functions", "onAutoForward": "silent" },
+    "5002": { "label": "Firebase Hosting", "onAutoForward": "silent" },
+    "9001": { "label": "Database Emulator", "onAutoForward": "silent" },
+    "9099": { "label": "Firebase Auth", "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "mounts": [
+    "source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind,readonly"
+  ],
+
+  "containerEnv": {
+    "FIREBASE_EMULATOR_HOST": "0.0.0.0"
+  },
+
+  "remoteUser": "vscode",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "toba.vsfire"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+      }
+    }
+  }
+}

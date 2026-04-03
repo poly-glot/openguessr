@@ -1,0 +1,70 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "games": {
+      "$roomId": {
+        "hostId": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "status": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "currentRound": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "roundStartedAt": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "roundTime": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "totalRounds": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "createdAt": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "finishedAt": {
+          ".read": "auth != null",
+          ".write": false
+        },
+        "players": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid",
+            "guesses": {
+              "$round": {
+                ".validate": "!data.exists() && newData.hasChildren(['countryCode', 'timestamp'])",
+                ".write": "auth != null && auth.uid == $uid && !data.exists()"
+              }
+            }
+          }
+        },
+        "rounds": {
+          "$round": {
+            "lat": {
+              ".read": "auth != null"
+            },
+            "lng": {
+              ".read": "auth != null"
+            },
+            "revealed": {
+              ".read": "auth != null"
+            },
+            "country": {
+              ".read": "auth != null && data.parent().child('revealed').val() === true"
+            }
+          }
+        }
+      }
+    }
+  }
+}

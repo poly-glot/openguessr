@@ -1,0 +1,50 @@
+flowchart TB
+    subgraph Frontend["Frontend (Vanilla JS)"]
+        Index["index.js<br/><small>Entry point</small>"]
+        Landing["Landing<br/><small>Hero + CTA</small>"]
+        AuthDialog["AuthDialog<br/><small>Username form</small>"]
+        GameScreen["GameScreen<br/><small>Game orchestrator</small>"]
+        Database["GameDatabase<br/><small>Firebase bridge</small>"]
+
+        subgraph Components["UI Components"]
+            StreetView["Street View"]
+            CountryPicker["Country Picker"]
+            Leaderboard["Leaderboard"]
+            Timer["Timer"]
+            ScoreDisplay["Score Display"]
+            Alert["Alert Service"]
+        end
+    end
+
+    subgraph Backend["Cloud Functions"]
+        LoginFn["login<br/><small>username → token</small>"]
+        CreateFn["createGame<br/><small>→ roomId + token</small>"]
+        JoinFn["joinGame<br/><small>roomId → status</small>"]
+        GuessFn["submitGuess<br/><small>→ score + correct</small>"]
+        MissFn["submitMiss<br/><small>→ 0 score</small>"]
+        NextFn["nextRound<br/><small>host only</small>"]
+        StartFn["startGame<br/><small>host only</small>"]
+    end
+
+    subgraph Data["Data Layer"]
+        Countries["countries.js<br/><small>Continents + flags</small>"]
+        Locations["locations.js<br/><small>Lat/lng + country</small>"]
+        Maps["maps.js<br/><small>Street View URLs</small>"]
+    end
+
+    Index --> Landing
+    Index --> AuthDialog
+    Index --> Database
+    Landing -->|"start-game event"| AuthDialog
+    AuthDialog -->|"signIn"| Database
+    Database -->|"resumeJourney"| GameScreen
+    GameScreen --> Components
+    GameScreen -->|"createGame / joinGame"| Database
+    Database -->|"httpsCallable"| Backend
+    GameScreen --> Data
+    Backend --> Locations
+
+    style Frontend fill:#f5f5f5,stroke:#333
+    style Backend fill:#e8f5e9,stroke:#2e7d32
+    style Data fill:#e3f2fd,stroke:#1565c0
+    style Components fill:#fff8e1,stroke:#f57f17

@@ -1,0 +1,150 @@
+name: CD
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  GCP_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'firebase-cloud-491613' }}
+  FIREBASE_SITE_ID: ${{ vars.FIREBASE_SITE_ID || 'openguessr' }}
+
+jobs:
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [ci]
+    environment:
+      name: staging
+      url: ${{ steps.urls.outputs.hosting_url }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      - name: Deploy to staging channel
+        id: urls
+        run: |
+          OUTPUT=$(firebase hosting:channel:deploy staging \
+            --project ${{ env.GCP_PROJECT_ID }} \
+            --site ${{ env.FIREBASE_SITE_ID }} \
+            --expires 7d \
+            --json 2>/dev/null || true)
+          URL=$(echo "$OUTPUT" | jq -r '.result // empty | to_entries[0].value.url // empty' 2>/dev/null)
+          if [ -z "$URL" ]; then
+            URL="https://${{ env.FIREBASE_SITE_ID }}--staging.web.app"
+          fi
+          echo "hosting_url=$URL" >> "$GITHUB_OUTPUT"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: ${{ steps.urls.outputs.site_url }}
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      - name: Deploy database rules
+        run: firebase deploy --only database --force --project ${{ env.GCP_PROJECT_ID }}
+      - name: Deploy Cloud Functions
+        run: |
+          cd functions && npm ci && cd ..
+          firebase deploy --only functions --force --project ${{ env.GCP_PROJECT_ID }}
+      - name: Deploy to Firebase Hosting (live)
+        id: urls
+        run: |
+          firebase deploy --only hosting --force --project ${{ env.GCP_PROJECT_ID }}
+          SITE_URL="https://${{ env.FIREBASE_SITE_ID }}.web.app"
+          if [ -n "${{ vars.CUSTOM_DOMAIN }}" ]; then
+            SITE_URL="https://${{ vars.CUSTOM_DOMAIN }}"
+          fi
+          echo "site_url=$SITE_URL" >> "$GITHUB_OUTPUT"
+      - name: Create release tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pkg = require('./package.json');
+            const tag = `v${pkg.version}-${context.sha.substring(0, 7)}`;
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/${tag}`,
+                sha: context.sha
+              });
+              core.info(`Created tag ${tag}`);
+            } catch (e) {
+              core.warning(`Tag ${tag} may already exist: ${e.message}`);
+            }
+
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    steps:
+      - name: Health-check site
+        run: |
+          SITE_URL="https://${{ vars.FIREBASE_SITE_ID || 'openguessr' }}.web.app"
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "${SITE_URL}")
+          echo "Hosting: HTTP $STATUS"
+          [ "$STATUS" -eq 200 ] || { echo "Smoke test FAILED"; exit 1; }
+          echo "Smoke test passed"

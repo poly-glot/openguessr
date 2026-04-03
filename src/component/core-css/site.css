@@ -1,0 +1,104 @@
+.site__header {
+  border-bottom: 1px solid var(--borderColor);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 40px;
+}
+
+.site__brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.site__brand a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site__brand a:hover,
+.site__brand a:focus,
+.site__brand a:active {
+  opacity: 0.6;
+  text-decoration: none;
+}
+
+.site__header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.site__header-nav a {
+  color: var(--main-color);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: normal;
+}
+
+.site__header-github {
+  color: var(--main-color);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+
+.site__header-github:hover { opacity: 0.5; }
+
+.site__header-github svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+#app-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+#app-view[hidden] {
+  display: none;
+}
+
+.site__body {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.site__footer {
+  border-top: 1px solid var(--borderColor);
+  font-size: 0.85rem;
+  padding: 15px 40px;
+}
+
+.site__notification {
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--borderColor);
+  display: flex;
+  font-size: 0.75rem;
+  justify-content: space-between;
+  min-height: 60px;
+  padding: 10px 40px;
+  position: sticky;
+  text-transform: uppercase;
+  top: 0;
+  z-index: 5;
+}
+
+.site__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .site__header { padding: 14px 24px; }
+  .site__notification { padding: 10px 24px; }
+  .site__footer { padding: 15px 24px; }
+}

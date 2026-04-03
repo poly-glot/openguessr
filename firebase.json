@@ -1,0 +1,77 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "X-XSS-Protection",
+            "value": "1; mode=block"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "geolocation=(), microphone=(), camera=()"
+          },
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=63072000; includeSubDomains; preload"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099,
+      "host": "0.0.0.0"
+    },
+    "functions": {
+      "port": 5001,
+      "host": "0.0.0.0"
+    },
+    "database": {
+      "port": 9001,
+      "host": "0.0.0.0"
+    },
+    "hosting": {
+      "port": 5002,
+      "host": "0.0.0.0"
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000,
+      "host": "0.0.0.0"
+    },
+    "singleProjectMode": true
+  }
+}
