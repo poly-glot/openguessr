@@ -13,9 +13,9 @@ const { locations } = require('./locations')
 
 // ── Config ────────────────────────────────────────────────────────
 
-const PROJECT_ID = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || 'demo-openguessr'
-const VERTEX_AI_LOCATION = process.env.VERTEX_AI_LOCATION || 'europe-west1'
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+const PROJECT_ID = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT_ID || 'demo-openguessr'
+const VERTEX_AI_LOCATION = process.env.VERTEX_AI_LOCATION || 'europe-west2'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
 const GCP_METADATA_TOKEN_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token'
 const TOKEN_CACHE_BUFFER = 60_000
@@ -44,22 +44,36 @@ async function getAccessToken () {
 
 // ── Gemini prompt ─────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a geography expert generating locations for a GeoGuessr-style game.
+const SYSTEM_PROMPT = `You generate street-level coordinates for a GeoGuessr-style guessing game.
 
-Your task is to generate random street-level coordinates from around the world that have Google Street View coverage.
+## TASK
+Produce random coordinates that are on real roads with Google Street View coverage. Each batch must be geographically diverse and unpredictable.
 
-## RULES
-- Spread locations across different countries and continents
-- Mix urban, suburban, and rural locations
-- AVOID famous landmarks, tourist attractions, and instantly recognizable places
-- Prefer residential streets, local roads, small towns, and ordinary neighbourhoods
-- Each location must be on an actual road or street (not ocean, forest, or desert)
-- Coordinates must be realistic and precise (6 decimal places)
-- Country codes must be valid ISO 3166-1 alpha-2 (uppercase)
+## GEOGRAPHIC DISTRIBUTION
+Each batch of N locations MUST include coordinates from at least 4 of these 6 regions, and MUST NOT repeat the same country more than twice:
+- Americas: US, CA, MX, BR, AR, CL, CO, PE, UY, EC, CR, GT, DO
+- Europe West: GB, FR, DE, ES, IT, PT, NL, BE, IE, CH, AT, SE, NO, DK, FI, IS
+- Europe East: PL, CZ, RO, HU, HR, RS, BG, SK, SI, EE, LV, LT, UA, AL, GE, TR
+- Asia-Pacific: JP, KR, TW, TH, VN, PH, ID, MY, SG, KH, IN, LK, BD, MN, NP
+- Middle East & Africa: ZA, KE, GH, NG, SN, BW, UG, RW, MA, TN, EG, IL, JO, AE, SA
+- Oceania: AU, NZ, FJ, PG
 
-## OUTPUT FORMAT
-Return ONLY a valid JSON array with no markdown fencing:
-[{"lat": number, "lng": number, "country": "XX"}]`
+## LOCATION QUALITY
+- Place coordinates on named roads, residential streets, or local highways -- NOT on highways between cities, bodies of water, forests, or empty land
+- Think of a specific real town or neighbourhood first, then produce coordinates within it
+- Vary the setting: include some small towns (population < 50,000), some suburban areas, and some city side streets
+- NEVER use coordinates near: Eiffel Tower, Times Square, Sydney Opera House, Big Ben, Colosseum, Christ the Redeemer, Taj Mahal, Great Wall, or any top-100 tourist attraction
+- Coordinates must have 6 decimal places of precision (approx 0.1 metre)
+
+## STREET VIEW COVERAGE HINTS
+Countries with extensive coverage (prefer these): US, GB, FR, DE, JP, AU, BR, MX, ES, IT, CZ, PL, RO, ZA, TH, ID, PH, KR, TW, NL, SE, NO, FI, DK, IE, PT, CH, AT, NZ, CA, AR, CL, CO, PE, UY
+Countries with partial coverage (use sparingly): IN, RU, TR, EG, MA, KE, GH, NG, BD, UA, HR, RS, BG, HU, SK, SI, EE, LV, LT, AL, GE, KH, VN, MY, SG, MN
+Countries with very limited coverage (avoid): CN, KZ, PK, SA, most of central Africa
+
+## OUTPUT
+Return a JSON array. Each object: {"lat": number, "lng": number, "country": "XX"}
+- "country" is the ISO 3166-1 alpha-2 code (uppercase) for the country the coordinate is in
+- lat range: -90 to 90, lng range: -180 to 180`
 
 // ── Location generation ───────────────────────────────────────────
 
@@ -108,13 +122,13 @@ async function callGemini (count) {
   const body = {
     contents: [{
       role: 'user',
-      parts: [{ text: `Generate ${count} random street-level locations for a geography guessing game. Follow all rules in your instructions.` }]
+      parts: [{ text: `Generate ${count} street-level locations. Pick countries you have NOT used recently. Surprise me -- include at least 3 countries that most people would not expect in a geography game.` }]
     }],
     systemInstruction: {
       parts: [{ text: SYSTEM_PROMPT }]
     },
     generationConfig: {
-      temperature: 1.0,
+      temperature: 0.9,
       maxOutputTokens: 4096,
       responseMimeType: 'application/json'
     }

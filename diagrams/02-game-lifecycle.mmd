@@ -1,0 +1,18 @@
+%%{init: {'theme': 'base', 'look': 'classic', 'flowchart': {'defaultRenderer': 'elk', 'curve': 'linear', 'padding': 20, 'nodeSpacing': 60, 'rankSpacing': 50}, 'elk': {'mergeEdges': true, 'nodePlacementStrategy': 'SIMPLE'}, 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#ffffff', 'fontFamily': 'Arial', 'fontSize': '14px'}, 'themeCSS': '.edgePath .path { stroke-width: 2px !important; } .flowchart-link { stroke-width: 2px !important; }'}}%%
+
+flowchart TB
+    Create["createGame\nHost picks username"] --> Waiting["WAITING\nPlayers join via shared link"]
+    Waiting -->|"startGame\n(host only)"| Playing["PLAYING\nRound 0 begins"]
+    Playing --> Guess["Players guess\nor timer expires (30s)"]
+    Guess --> Score["Score calculated\n1000 + time bonus or 0"]
+    Score -->|"nextRound\n(host only)"| Check{"Round < 5?"}
+    Check -->|"Yes"| Playing
+    Check -->|"No"| Finished["FINISHED\nFinal leaderboard shown"]
+
+    style Create fill:#fff,stroke:#000,stroke-width:2px,color:#000
+    style Waiting fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Playing fill:#fff,stroke:#000,stroke-width:3px,color:#000
+    style Guess fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Score fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Check fill:#fff,stroke:#000,stroke-width:2px,color:#000
+    style Finished fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000

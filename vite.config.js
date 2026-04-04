@@ -46,6 +46,25 @@ export default defineConfig({
       forks: {
         singleFork: true
       }
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html'],
+      include: ['src/**/*.js'],
+      exclude: [
+        'src/**/*.spec.js',
+        'src/**/*.test.js',
+        'src/component/core-css/**',
+        'src/component/share-link/**',
+        'src/firebase-init.js',
+        'src/index.js'
+      ],
+      thresholds: {
+        statements: 85,
+        branches: 85,
+        functions: 85,
+        lines: 85
+      }
     }
   }
 })

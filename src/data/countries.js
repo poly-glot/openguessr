@@ -111,10 +111,11 @@ export function getFlagUrl (code) {
   return `https://flagcdn.com/w40/${code.toLowerCase()}.png`
 }
 
+const _byCode = new Map()
+for (const [continent, countries] of Object.entries(continents)) {
+  for (const c of countries) _byCode.set(c.code, { ...c, continent })
+}
+
 export function getCountryByCode (code) {
-  for (const [continent, countries] of Object.entries(continents)) {
-    const country = countries.find(c => c.code === code)
-    if (country) return { ...country, continent }
-  }
-  return null
+  return _byCode.get(code) || null
 }

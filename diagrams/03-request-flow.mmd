@@ -1,0 +1,43 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000', 'actorBorder': '#000000', 'actorBkg': '#ffffff', 'actorTextColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'noteBkgColor': '#f5f5f5', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#f5f5f5', 'activationBorderColor': '#000000', 'fontFamily': 'Arial', 'fontSize': '14px'}, 'sequence': {'messageLineWidth': 3, 'actorBorderWidth': 3}, 'themeCSS': '.messageLine0, .messageLine1 { stroke-width: 3px !important; } .actor { stroke-width: 2px !important; } .note { stroke-width: 2px !important; } .loopLine { stroke-width: 2px !important; }'}}%%
+
+sequenceDiagram
+    participant B as Browser
+    participant CF as Cloud Functions
+    participant Auth as Firebase Auth
+    participant DB as Realtime Database
+    participant GM as Google Maps
+
+    Note over B,GM: Game Creation
+
+    B->>CF: login({ username })
+    CF->>Auth: createCustomToken(uid)
+    Auth-->>CF: token
+    CF-->>B: { token, uid }
+    B->>CF: createGame(username)
+    CF->>DB: Set game (5 rounds from location pool)
+    CF-->>B: { roomId, token }
+    B->>DB: listenGameChanges(roomId)
+
+    Note over B,GM: Player Joins
+
+    B->>CF: joinGame(roomId, username)
+    CF->>DB: Add player to game
+    DB-->>B: onValue (lobby update)
+
+    Note over B,GM: Round (x5)
+
+    B->>CF: startGame(roomId)
+    CF->>DB: status=playing, roundStartedAt=now
+    DB-->>B: onValue (round data)
+    B->>GM: Street View iframe(lat, lng)
+    B->>CF: submitGuess(roomId, round, code)
+    CF->>CF: Score = correct ? 1000 + timeBonus : 0
+    CF->>DB: Update guess + cumulative score
+    DB-->>B: onValue (leaderboard update)
+    B->>CF: nextRound(roomId)
+    CF->>DB: Reveal answer, advance round
+
+    Note over B,GM: Game Over (after round 5)
+
+    CF->>DB: status=finished
+    DB-->>B: onValue (final scores)

@@ -1,5 +1,5 @@
 import { getApp } from 'firebase/app'
-import { getDatabase, ref, onValue, off } from 'firebase/database'
+import { getDatabase, ref, onValue, off, onDisconnect, set, serverTimestamp } from 'firebase/database'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { getAuth, onAuthStateChanged, signInWithCustomToken, updateProfile, signOut as firebaseSignOut } from 'firebase/auth'
 
@@ -7,6 +7,12 @@ import authDialog from '../auth-dialog'
 import gameScreen from '../game-screen'
 
 const FUNCTIONS_REGION = 'us-central1'
+
+function callFunction (name, data) {
+  const functions = getFunctions(getApp(), FUNCTIONS_REGION)
+  const fn = httpsCallable(functions, name)
+  return fn(data).then(r => r.data)
+}
 
 export class GameDatabase {
   constructor () {
@@ -33,11 +39,8 @@ export class GameDatabase {
   async signIn (username) {
     this._username = username
 
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const loginFunction = httpsCallable(functions, 'login')
-
     const auth = getAuth()
-    const { data: { token } } = await loginFunction({ username })
+    const { token } = await callFunction('login', { username })
     await signInWithCustomToken(auth, token)
     await updateProfile(auth.currentUser, { displayName: username })
   }
@@ -49,11 +52,8 @@ export class GameDatabase {
   }
 
   async createGame (username) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const createGameFn = httpsCallable(functions, 'createGame')
-
     const auth = getAuth()
-    const { data: { roomId, token } } = await createGameFn({ username })
+    const { roomId, token } = await callFunction('createGame', { username })
     await signInWithCustomToken(auth, token)
     await updateProfile(auth.currentUser, { displayName: username })
 
@@ -61,51 +61,72 @@ export class GameDatabase {
   }
 
   async joinGame (roomId, username) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const joinGameFn = httpsCallable(functions, 'joinGame')
-
-    const { data } = await joinGameFn({ roomId, username })
-    return data
+    return callFunction('joinGame', { roomId, username })
   }
 
-  async submitGuess (roomId, round, countryCode) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const submitGuessFn = httpsCallable(functions, 'submitGuess')
-
-    const { data } = await submitGuessFn({ roomId, round, countryCode })
-    return data
+  async submitGuess (roomId, round, lat, lng) {
+    return callFunction('submitGuess', { roomId, round, lat, lng })
   }
 
   async submitMiss (roomId, round) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const submitMissFn = httpsCallable(functions, 'submitMiss')
-
-    const { data } = await submitMissFn({ roomId, round })
-    return data
+    return callFunction('submitMiss', { roomId, round })
   }
 
   async nextRound (roomId) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const nextRoundFn = httpsCallable(functions, 'nextRound')
-
-    const { data } = await nextRoundFn({ roomId })
-    return data
+    return callFunction('nextRound', { roomId })
   }
 
   async startGame (roomId) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const startGameFn = httpsCallable(functions, 'startGame')
-
-    const { data } = await startGameFn({ roomId })
-    return data
+    return callFunction('startGame', { roomId })
   }
 
   async transferHost (roomId, targetUid) {
-    const functions = getFunctions(getApp(), FUNCTIONS_REGION)
-    const transferHostFn = httpsCallable(functions, 'transferHost')
+    return callFunction('transferHost', { roomId, targetUid })
+  }
 
-    const { data } = await transferHostFn({ roomId, targetUid })
-    return data
+  async requestHostPromotion (roomId) {
+    return callFunction('requestHostPromotion', { roomId })
+  }
+
+  async voteOnHostPromotion (roomId, vote) {
+    return callFunction('voteOnHostPromotion', { roomId, vote })
+  }
+
+  async resolveHostPromotion (roomId) {
+    return callFunction('resolveHostPromotion', { roomId })
+  }
+
+  listenPromotionRequests (roomId, callback) {
+    const db = getDatabase()
+    const promotionRef = ref(db, `promotionRequests/${roomId}`)
+    onValue(promotionRef, (snapshot) => {
+      callback(snapshot.val())
+    })
+    this._listeners.push(promotionRef)
+  }
+
+  setupPresence (roomId, uid) {
+    const db = getDatabase()
+    const presenceRef = ref(db, `games/${roomId}/players/${uid}/online`)
+    const lastSeenRef = ref(db, `games/${roomId}/players/${uid}/lastSeen`)
+    set(presenceRef, true)
+    onDisconnect(presenceRef).set(false)
+    onDisconnect(lastSeenRef).set(serverTimestamp())
+    this._listeners.push(presenceRef)
+    this._listeners.push(lastSeenRef)
+  }
+
+  listenConnection (onConnected, onDisconnected) {
+    const db = getDatabase()
+    const connRef = ref(db, '.info/connected')
+    onValue(connRef, (snapshot) => {
+      if (snapshot.val() === true) {
+        onConnected()
+      } else {
+        onDisconnected()
+      }
+    })
+    this._listeners.push(connRef)
   }
 
   listenGameChanges (roomId, callback) {

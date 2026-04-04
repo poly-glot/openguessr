@@ -20,7 +20,7 @@ concurrency:
 
 env:
   NODE_VERSION: '22'
-  GCP_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  GCP_REGION: ${{ vars.GCP_REGION || 'europe-west2' }}
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'firebase-cloud-491613' }}
   FIREBASE_SITE_ID: ${{ vars.FIREBASE_SITE_ID || 'openguessr' }}
 

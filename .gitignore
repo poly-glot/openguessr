@@ -32,3 +32,4 @@ playwright-report/
 
 # Claude Code
 .claude/worktree/
+coverage/

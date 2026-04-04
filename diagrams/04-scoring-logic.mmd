@@ -1,0 +1,24 @@
+%%{init: {'theme': 'base', 'look': 'classic', 'flowchart': {'defaultRenderer': 'elk', 'curve': 'linear', 'padding': 20, 'nodeSpacing': 60, 'rankSpacing': 50}, 'elk': {'mergeEdges': true, 'nodePlacementStrategy': 'SIMPLE'}, 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#ffffff', 'fontFamily': 'Arial', 'fontSize': '14px'}, 'themeCSS': '.edgePath .path { stroke-width: 2px !important; } .flowchart-link { stroke-width: 2px !important; }'}}%%
+
+flowchart TB
+    Submit["Player submits guess"] --> Compare{"Correct\ncountry?"}
+    Compare -->|"No"| Zero["Score = 0"]
+    Compare -->|"Yes"| Elapsed["elapsed = (now - roundStartedAt) / 1000"]
+    Elapsed --> Remaining["timeRemaining = max(0, 30 - elapsed)"]
+    Remaining --> Bonus["timeBonus = round(500 * timeRemaining / 30)"]
+    Bonus --> Total["Score = 1000 + timeBonus"]
+    Total --> Range["Range: 1000 to 1500 per round"]
+    Zero --> Cumulative["Add to player's cumulative score"]
+    Range --> Cumulative
+    Cumulative --> Max["Max possible: 7500 (5 rounds x 1500)"]
+
+    style Submit fill:#fff,stroke:#000,stroke-width:2px,color:#000
+    style Compare fill:#fff,stroke:#000,stroke-width:2px,color:#000
+    style Zero fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Elapsed fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Remaining fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Bonus fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Total fill:#fff,stroke:#000,stroke-width:3px,color:#000
+    style Range fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Cumulative fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Max fill:#fff,stroke:#000,stroke-width:3px,color:#000

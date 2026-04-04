@@ -4,67 +4,43 @@
     ".write": false,
     "games": {
       "$roomId": {
-        "hostId": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "status": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "currentRound": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "roundStartedAt": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "roundTime": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "totalRounds": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "createdAt": {
-          ".read": "auth != null",
-          ".write": false
-        },
-        "finishedAt": {
-          ".read": "auth != null",
-          ".write": false
-        },
+        ".read": "auth != null",
         "players": {
-          ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null && auth.uid == $uid",
+            "name": {
+              ".write": "auth != null && auth.uid == $uid",
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 32"
+            },
+            "score": {
+              ".write": false
+            },
+            "joinedAt": {
+              ".write": "auth != null && auth.uid == $uid && !data.exists()",
+              ".validate": "newData.isNumber()"
+            },
             "guesses": {
               "$round": {
-                ".validate": "!data.exists() && newData.hasChildren(['countryCode', 'timestamp'])",
-                ".write": "auth != null && auth.uid == $uid && !data.exists()"
+                ".write": "auth != null && auth.uid == $uid && !data.exists()",
+                ".validate": "newData.hasChildren(['lat', 'lng', 'timestamp', 'score'])"
               }
-            }
-          }
-        },
-        "rounds": {
-          "$round": {
-            "lat": {
-              ".read": "auth != null"
-            },
-            "lng": {
-              ".read": "auth != null"
-            },
-            "revealed": {
-              ".read": "auth != null"
-            },
-            "country": {
-              ".read": "auth != null && data.parent().child('revealed').val() === true"
             }
           }
         }
       }
+    },
+    "game-answers": {
+      ".read": false,
+      ".write": false
+    },
+    "promotionRequests": {
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+    "location-pool": {
+      ".read": false,
+      ".write": false
     }
   }
 }

@@ -1,0 +1,20 @@
+%%{init: {'theme': 'base', 'look': 'classic', 'flowchart': {'defaultRenderer': 'elk', 'curve': 'linear', 'padding': 20, 'nodeSpacing': 60, 'rankSpacing': 50}, 'elk': {'mergeEdges': true, 'nodePlacementStrategy': 'SIMPLE'}, 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000', 'secondaryColor': '#f5f5f5', 'tertiaryColor': '#ffffff', 'fontFamily': 'Arial', 'fontSize': '14px'}, 'themeCSS': '.edgePath .path { stroke-width: 2px !important; } .flowchart-link { stroke-width: 2px !important; }'}}%%
+
+flowchart TB
+    Browser["Browser\nVanilla JS + Lit Components"] --> FH["Firebase Hosting\nCDN + SPA rewrites"]
+    FH --> CF["Cloud Functions\nNode.js 22"]
+    CF --> Auth["Firebase Auth\nCustom tokens"]
+    CF --> RTDB["Realtime Database\nGame state + scores"]
+    CF --> Gemini["Vertex AI Gemini\nLocation generation"]
+    CF --> GMeta["Street View\nMetadata API"]
+    Browser --> GMaps["Google Maps\nStreet View Embed"]
+    Browser -->|"onValue\n(realtime)"| RTDB
+
+    style Browser fill:#fff,stroke:#000,stroke-width:3px,color:#000
+    style FH fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style CF fill:#fff,stroke:#000,stroke-width:3px,color:#000
+    style Auth fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style RTDB fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style Gemini fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style GMeta fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
+    style GMaps fill:#f5f5f5,stroke:#000,stroke-width:2px,color:#000
