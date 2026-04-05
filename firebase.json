@@ -6,6 +6,7 @@
     "source": "functions"
   },
   "hosting": {
+    "site": "openguessr",
     "public": "dist",
     "ignore": [
       "firebase.json",
