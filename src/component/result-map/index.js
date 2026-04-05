@@ -64,7 +64,7 @@ export class ResultMap extends LitElement {
       .result-map {
         position: absolute;
         inset: 0;
-        z-index: 10;
+        z-index: 100;
         display: flex;
         flex-direction: column;
         background: #fff;
