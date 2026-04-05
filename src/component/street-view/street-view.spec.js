@@ -76,17 +76,15 @@ describe('StreetViewPanel', () => {
   })
 
   // Street View state
-  it('renders iframe when lat/lng are set and status is playing', async () => {
+  it('renders panorama container when lat/lng are set and status is playing', async () => {
     el.status = 'playing'
     el.lat = 48.8566
     el.lng = 2.3522
     await el.updateComplete
 
-    const iframe = el.renderRoot.querySelector('[data-cy="street-view-iframe"]')
-    expect(iframe).toBeTruthy()
-    expect(iframe.src).toContain('google.com/maps/embed')
-    expect(iframe.src).toContain('48.8566')
-    expect(iframe.src).toContain('2.3522')
+    const panorama = el.renderRoot.querySelector('[data-cy="street-view-panorama"]')
+    expect(panorama).toBeTruthy()
+    expect(panorama.classList.contains('street-view__panorama')).toBe(true)
   })
 
   // Game over state
