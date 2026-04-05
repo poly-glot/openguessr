@@ -1,7 +1,40 @@
 import { LitElement, html, css } from 'lit'
-import { createStreetViewUrl } from '../../data/maps'
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
+
+let mapsSdkPromise = null
+
+function bootstrapMapsLoader () {
+  if (window.google?.maps?.importLibrary) return
+  // Google's official inline bootstrap loader (sets up google.maps.importLibrary)
+  ;((g) => {
+    let h; const a = 'The Google Maps JavaScript API'; const c = 'google'; const l = 'importLibrary'; const q = '__ib__'
+    const m = document; let b = window
+    b = b[c] || (b[c] = {})
+    const d = b.maps || (b.maps = {}); const r = new Set(); const e = new URLSearchParams()
+    const u = () => h || (h = new Promise((f, n) => {
+      const scr = m.createElement('script')
+      e.set('libraries', [...r] + '')
+      for (const k in g) e.set(k.replace(/[A-Z]/g, t => '_' + t[0].toLowerCase()), g[k])
+      e.set('callback', c + '.maps.' + q)
+      scr.src = `https://maps.${c}apis.com/maps/api/js?` + e
+      d[q] = f
+      scr.onerror = () => { h = null; n(Error(a + ' could not load.')) }
+      scr.nonce = m.querySelector('script[nonce]')?.nonce || ''
+      m.head.append(scr)
+    }))
+    d[l] ? console.warn(a + ' only loads once. Ignoring:', g) : (d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)))
+  })({ key: GOOGLE_MAPS_API_KEY, v: 'weekly' })
+}
+
+function loadMapsSdk () {
+  if (mapsSdkPromise) return mapsSdkPromise
+  bootstrapMapsLoader()
+  mapsSdkPromise = window.google.maps.importLibrary('streetView').then(({ StreetViewPanorama }) => {
+    return { ...window.google.maps, StreetViewPanorama }
+  })
+  return mapsSdkPromise
+}
 
 export class StreetViewPanel extends LitElement {
   static properties = {
@@ -48,14 +81,12 @@ export class StreetViewPanel extends LitElement {
       letter-spacing: 0.05em;
     }
 
-    iframe {
+    .street-view__panorama {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      border: 0;
-      display: block;
     }
 
     .lobby-info {
@@ -134,6 +165,7 @@ export class StreetViewPanel extends LitElement {
     this.playerNames = ''
     this._hintShown = false
     this._animationFrameId = null
+    this._panorama = null
   }
 
   disconnectedCallback () {
@@ -141,6 +173,47 @@ export class StreetViewPanel extends LitElement {
     if (this._animationFrameId) {
       cancelAnimationFrame(this._animationFrameId)
       this._animationFrameId = null
+    }
+    this._panorama = null
+  }
+
+  updated (changed) {
+    if ((changed.has('lat') || changed.has('lng') || changed.has('status')) &&
+        this.lat != null && this.lng != null &&
+        this.status !== 'lobby' && this.status !== 'gameover') {
+      this._mountPanorama()
+    }
+  }
+
+  async _mountPanorama () {
+    const container = this.renderRoot.querySelector('.street-view__panorama')
+    if (!container) return
+
+    try {
+      const maps = await loadMapsSdk()
+      if (this._panorama) {
+        this._panorama.setPosition({ lat: this.lat, lng: this.lng })
+        this._panorama.setPov({ heading: 0, pitch: 0 })
+      } else {
+        this._panorama = new maps.StreetViewPanorama(container, {
+          position: { lat: this.lat, lng: this.lng },
+          pov: { heading: 0, pitch: 0 },
+          zoom: 0,
+          // Hide everything that reveals the location
+          addressControl: false,
+          linksControl: false,
+          showRoadLabels: false,
+          fullscreenControl: false,
+          motionTracking: false,
+          motionTrackingControl: false,
+          enableCloseButton: false,
+          // Keep pan and zoom for gameplay
+          panControl: true,
+          zoomControl: true
+        })
+      }
+    } catch (err) {
+      console.error('Street View panorama failed to load:', err)
     }
   }
 
@@ -180,13 +253,12 @@ export class StreetViewPanel extends LitElement {
   }
 
   _renderStreetView () {
-    const url = createStreetViewUrl(this.lat, this.lng, GOOGLE_MAPS_API_KEY)
     const showHint = !this._hintShown
     if (showHint) this._hintShown = true
 
     return html`
       <div class="street-view">
-        <iframe src=${url} allowfullscreen loading="lazy" title="Google Street View panorama" data-cy="street-view-iframe"></iframe>
+        <div class="street-view__panorama" data-cy="street-view-panorama"></div>
         ${showHint ? html`<div class="street-view__hint">Drag to look around</div>` : ''}
         <slot></slot>
       </div>
