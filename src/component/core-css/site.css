@@ -97,8 +97,89 @@
   gap: 12px;
 }
 
+/* Burger menu (Copy link, Sign out) — flattened inline on desktop. */
+.toolbar-menu { display: contents; }
+.toolbar-menu__btn { display: none; }
+.toolbar-menu__items {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* On desktop/tablet, push Start Game / Next Round to the far right. */
+.site__toolbar [data-cy="start-game-btn"],
+.site__toolbar [data-cy="next-round"] { order: 1; }
+
 @media (max-width: 900px) {
   .site__header { padding: 14px 24px; }
-  .site__notification { padding: 10px 24px; }
+  .site__notification { padding: 10px 24px; gap: 10px; }
   .site__footer { padding: 15px 24px; }
+  .site__toolbar { gap: 8px; }
+  /* On mobile, primary action stays on the left; burger on the right. */
+  .site__toolbar [data-cy="start-game-btn"],
+  .site__toolbar [data-cy="next-round"] { order: 0; }
+
+  /* On mobile, secondary actions collapse into a burger dropdown. */
+  .toolbar-menu { display: inline-block; position: relative; }
+  .toolbar-menu__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid var(--borderColor, rgb(0 0 0 / 15%));
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    cursor: pointer;
+  }
+  .toolbar-menu__btn:hover { background: #f5f5f5; }
+  .toolbar-menu__icon,
+  .toolbar-menu__icon::before,
+  .toolbar-menu__icon::after {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #222;
+    border-radius: 1px;
+  }
+  .toolbar-menu__icon { position: relative; }
+  .toolbar-menu__icon::before,
+  .toolbar-menu__icon::after {
+    content: '';
+    position: absolute;
+    left: 0;
+  }
+  .toolbar-menu__icon::before { top: -6px; }
+  .toolbar-menu__icon::after  { top: 6px; }
+
+  .toolbar-menu__items {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: #fff;
+    border: 1px solid var(--borderColor, rgb(0 0 0 / 15%));
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+    padding: 6px;
+    min-width: 180px;
+    z-index: 20;
+  }
+  .toolbar-menu[data-open="true"] .toolbar-menu__items { display: flex; }
+  .toolbar-menu__items .button-link {
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .toolbar-menu__items .button-link:hover,
+  .toolbar-menu__items .button-link:focus {
+    background: #f5f5f5;
+  }
 }

@@ -99,10 +99,19 @@ export class GuessMap extends LitElement {
     this.selectedLng = null
     this._map = null
     this._marker = null
+    this._resizeObserver = null
   }
 
   firstUpdated () {
     this._initMap()
+  }
+
+  disconnectedCallback () {
+    super.disconnectedCallback()
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect()
+      this._resizeObserver = null
+    }
   }
 
   updated (changed) {
@@ -147,6 +156,14 @@ export class GuessMap extends LitElement {
         this._map.on('zoomend', () => this._toggleLabels())
         this._toggleLabels()
       })
+
+    // Guard against container resizes (sidebar flex layout may settle after
+    // mount, leaving the Leaflet viewport at 0×0 with blank tiles until an
+    // invalidateSize() is triggered). Also handles orientation changes.
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._map) this._map.invalidateSize()
+    })
+    this._resizeObserver.observe(container)
 
     this._map.on('click', (e) => {
       if (this.disabled) return

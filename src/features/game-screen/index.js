@@ -127,19 +127,27 @@ export class GameView extends LitElement {
     }
 
     @media (max-width: 900px) {
+      /* Fit the whole game into one viewport — avoids fighting the maps
+         for vertical touch gestures. Each half is interactive and sized;
+         no outer page scroll needed. */
       .game-layout {
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
+        height: 100%;
+        overflow: hidden;
       }
-      .game-main { min-height: 300px; }
+      .game-main {
+        flex: 0 0 55%;
+        min-height: 0;
+      }
       .game-sidebar {
+        flex: 0 0 45%;
+        min-height: 0;
         width: 100%;
         border-left: none;
         border-top: 1px solid var(--borderColor, rgb(0 0 0 / 15%));
-        overflow-y: visible;
-        min-height: 350px;
       }
+      .game-sidebar__leaderboard { max-height: 35%; }
     }
   `
 
@@ -256,22 +264,59 @@ export class GameView extends LitElement {
     if (!toolbar || toolbar._bound) return
     toolbar._bound = true
 
+    // Secondary actions live inside a burger menu wrapper.
+    // On desktop CSS flattens them inline; on mobile they collapse to a dropdown.
+    const menu = document.createElement('div')
+    menu.className = 'toolbar-menu'
+    menu.dataset.cy = 'toolbar-menu'
+    menu.dataset.open = 'false'
+
+    const trigger = document.createElement('button')
+    trigger.type = 'button'
+    trigger.className = 'toolbar-menu__btn'
+    trigger.setAttribute('aria-label', 'More actions')
+    trigger.setAttribute('aria-expanded', 'false')
+    trigger.innerHTML = '<span class="toolbar-menu__icon" aria-hidden="true"></span>'
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const open = menu.dataset.open !== 'true'
+      menu.dataset.open = String(open)
+      trigger.setAttribute('aria-expanded', String(open))
+    })
+
+    const items = document.createElement('div')
+    items.className = 'toolbar-menu__items'
+
+    const closeMenu = () => {
+      menu.dataset.open = 'false'
+      trigger.setAttribute('aria-expanded', 'false')
+    }
+
     const shareBtn = document.createElement('button')
     shareBtn.type = 'button'
     shareBtn.className = 'button-link'
     shareBtn.dataset.cy = 'copy'
     shareBtn.textContent = 'Copy & Share Link'
-    shareBtn.addEventListener('click', () => this._shareLink())
+    shareBtn.addEventListener('click', () => { closeMenu(); this._shareLink() })
 
     const signoutBtn = document.createElement('button')
     signoutBtn.type = 'button'
     signoutBtn.className = 'button-link'
     signoutBtn.dataset.cy = 'signout'
     signoutBtn.textContent = 'Sign out'
-    signoutBtn.addEventListener('click', () => this._signOut())
+    signoutBtn.addEventListener('click', () => { closeMenu(); this._signOut() })
 
-    toolbar.appendChild(shareBtn)
-    toolbar.appendChild(signoutBtn)
+    items.appendChild(shareBtn)
+    items.appendChild(signoutBtn)
+    menu.appendChild(trigger)
+    menu.appendChild(items)
+
+    // Close burger on outside click
+    document.addEventListener('click', (e) => {
+      if (menu.dataset.open === 'true' && !menu.contains(e.target)) closeMenu()
+    })
+
+    toolbar.appendChild(menu)
   }
 
   updated () {
@@ -289,6 +334,9 @@ export class GameView extends LitElement {
     let startBtn = toolbar.querySelector('[data-cy="start-game-btn"]')
     let nextBtn = toolbar.querySelector('[data-cy="next-round"]')
 
+    // Insert primary actions BEFORE the burger menu so the menu stays at the end.
+    const menu = toolbar.querySelector('.toolbar-menu')
+
     if (showStart && !startBtn) {
       startBtn = document.createElement('button')
       startBtn.type = 'button'
@@ -296,7 +344,7 @@ export class GameView extends LitElement {
       startBtn.dataset.cy = 'start-game-btn'
       startBtn.textContent = 'Start Game'
       startBtn.addEventListener('click', () => this._startGame())
-      toolbar.appendChild(startBtn)
+      toolbar.insertBefore(startBtn, menu)
     } else if (!showStart && startBtn) {
       startBtn.remove()
     }
@@ -309,7 +357,7 @@ export class GameView extends LitElement {
       nextBtn.textContent = 'Next Round'
       nextBtn.disabled = !this._hasGuessed
       nextBtn.addEventListener('click', () => this._nextRound())
-      toolbar.appendChild(nextBtn)
+      toolbar.insertBefore(nextBtn, menu)
     } else if (showNext && nextBtn) {
       nextBtn.disabled = !this._hasGuessed
       nextBtn.textContent = 'Next Round'
