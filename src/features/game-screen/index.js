@@ -665,19 +665,6 @@ export class GameView extends LitElement {
               .playerCount=${this._getPlayerCount()}
               .playerNames=${this._getPlayerNames()}
             >
-              ${showScore ? html`
-                <result-map
-                  ?visible=${showScore}
-                  .guessLat=${this._scoreResult.guessLat}
-                  .guessLng=${this._scoreResult.guessLng}
-                  .answerLat=${this._scoreResult.answerLat}
-                  .answerLng=${this._scoreResult.answerLng}
-                  .distanceKm=${this._scoreResult.distanceKm}
-                  .score=${this._scoreResult.score}
-                  ?waiting-for-host=${this._hasGuessed && !this._isHost && isPlaying}
-                  @score-closed=${this._onScoreClosed}
-                ></result-map>
-              ` : ''}
               ${isFinished ? html`
                 <game-over
                   slot="gameover"
@@ -687,6 +674,19 @@ export class GameView extends LitElement {
                 ></game-over>
               ` : ''}
             </street-view-panel>
+            ${showScore ? html`
+              <result-map
+                ?visible=${showScore}
+                .guessLat=${this._scoreResult.guessLat}
+                .guessLng=${this._scoreResult.guessLng}
+                .answerLat=${this._scoreResult.answerLat}
+                .answerLng=${this._scoreResult.answerLng}
+                .distanceKm=${this._scoreResult.distanceKm}
+                .score=${this._scoreResult.score}
+                ?waiting-for-host=${this._hasGuessed && !this._isHost && isPlaying}
+                @score-closed=${this._onScoreClosed}
+              ></result-map>
+            ` : ''}
           </div>
         </div>
 

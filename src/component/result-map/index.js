@@ -58,13 +58,17 @@ export class ResultMap extends LitElement {
   static styles = [
     css`${unsafeCSS(leafletCss)}`,
     css`
-      :host { display: contents; }
-      :host(:not([visible])) .result-map { display: none; }
+      :host {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 100;
+      }
+      :host(:not([visible])) { display: none; }
 
       .result-map {
         position: absolute;
         inset: 0;
-        z-index: 100;
         display: flex;
         flex-direction: column;
         background: #fff;
@@ -205,7 +209,7 @@ export class ResultMap extends LitElement {
     fetch('/assets/world-borders.geojson')
       .then(r => r.json())
       .then(data => {
-        L.geoJSON(data, {
+        const countries = L.geoJSON(data, {
           style: {
             color: '#ccc',
             weight: 1,
@@ -222,6 +226,9 @@ export class ResultMap extends LitElement {
             }
           }
         }).addTo(this._map)
+
+        // Push country polygons to the back so they don't cover the guess→answer polyline
+        countries.bringToBack()
 
         this._map.on('zoomend', () => this._toggleLabels())
         this._toggleLabels()
@@ -250,9 +257,9 @@ export class ResultMap extends LitElement {
         [this.guessLat, this.guessLng],
         [this.answerLat, this.answerLng]
       )
-      this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 })
+      this._map.fitBounds(bounds, { padding: [60, 60], maxZoom: 4 })
     } else if (hasAnswer) {
-      this._map.setView([this.answerLat, this.answerLng], 5)
+      this._map.setView([this.answerLat, this.answerLng], 4)
     } else {
       this._map.setView([20, 0], 2)
     }
