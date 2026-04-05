@@ -6,7 +6,7 @@ const { initializeApp } = require('firebase-admin/app')
 
 setGlobalOptions({
   region: 'europe-west2',
-  serviceAccount: 'openguessr-runtime'
+  serviceAccount: 'openguessr-runtime@firebase-cloud-491613.iam.gserviceaccount.com'
 })
 
 const googleMapsApiKey = defineSecret('openguessr-GOOGLE_MAPS_API_KEY')
