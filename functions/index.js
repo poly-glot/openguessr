@@ -1,7 +1,13 @@
+const { setGlobalOptions } = require('firebase-functions/v2')
 const { onCall, HttpsError } = require('firebase-functions/v2/https')
 const { onSchedule } = require('firebase-functions/v2/scheduler')
 const { defineSecret } = require('firebase-functions/params')
 const { initializeApp } = require('firebase-admin/app')
+
+setGlobalOptions({
+  region: 'europe-west2',
+  serviceAccount: 'openguessr-runtime'
+})
 
 const googleMapsApiKey = defineSecret('openguessr-GOOGLE_MAPS_API_KEY')
 const { getAuth } = require('firebase-admin/auth')
