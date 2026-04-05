@@ -6,10 +6,13 @@ import { getFunctions, connectFunctionsEmulator } from 'firebase/functions'
 const isEmulatorMode = import.meta.env.VITE_USE_EMULATORS === 'true'
 
 const productionConfig = {
-  apiKey: 'AIzaSyAHt3QJRBDISRaWaqblQl2VwjWiHvjpgIs',
-  projectId: 'openguessr-firebase',
-  authDomain: 'openguessr-firebase.firebaseapp.com',
-  databaseURL: 'https://openguessr-firebase-default-rtdb.firebaseio.com'
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  appId: '1:563789376070:web:9f2f30f0ff877901f07847',
+  projectId: 'firebase-cloud-491613',
+  authDomain: 'fir-cloud-491613.firebaseapp.com',
+  databaseURL: 'https://firebase-cloud-491613-default-rtdb.europe-west1.firebasedatabase.app',
+  storageBucket: 'firebase-cloud-491613.firebasestorage.app',
+  messagingSenderId: '563789376070'
 }
 
 const emulatorConfig = {

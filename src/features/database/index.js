@@ -6,7 +6,7 @@ import { getAuth, onAuthStateChanged, signInWithCustomToken, updateProfile, sign
 import authDialog from '../auth-dialog'
 import gameScreen from '../game-screen'
 
-const FUNCTIONS_REGION = 'us-central1'
+const FUNCTIONS_REGION = 'europe-west2'
 
 function callFunction (name, data) {
   const functions = getFunctions(getApp(), FUNCTIONS_REGION)
