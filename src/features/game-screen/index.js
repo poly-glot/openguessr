@@ -236,6 +236,9 @@ export class GameView extends LitElement {
   // ── Listeners ───────────────────────────────────────────────
 
   _setupListeners () {
+    // Unsubscribe any existing listeners to prevent stacking on room switch
+    database.cleanup()
+
     database.listenGameChanges(this.roomId, (state) => {
       this._onGameStateChange(state)
     })
@@ -479,8 +482,8 @@ export class GameView extends LitElement {
 
       try {
         await database.submitMiss(this.roomId, this._currentRound)
-      } catch {
-        // Best-effort
+      } catch (err) {
+        AlertService.announce('Failed to submit — please refresh')
       }
 
       const round = this._getRound()

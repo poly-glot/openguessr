@@ -227,12 +227,16 @@ export class ResultMap extends LitElement {
           }
         }).addTo(this._map)
 
+        // Guard against component unmount during async fetch
+        if (!this._map) return
+
         // Push country polygons to the back so they don't cover the guess→answer polyline
         countries.bringToBack()
 
         this._map.on('zoomend', () => this._toggleLabels())
         this._toggleLabels()
       })
+      .catch(err => console.warn('Failed to load borders:', err))
 
     const hasGuess = this.guessLat != null && this.guessLng != null
     const hasAnswer = this.answerLat != null && this.answerLng != null
@@ -311,7 +315,7 @@ export class ResultMap extends LitElement {
             @click=${this._close}
           >&times;</button>
         </div>
-        <div class="result-map__container"></div>
+        <div class="result-map__container" tabindex="0" role="application" aria-label="Result map showing guess and answer locations"></div>
       </div>
     `
   }

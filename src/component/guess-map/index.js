@@ -156,6 +156,7 @@ export class GuessMap extends LitElement {
         this._map.on('zoomend', () => this._toggleLabels())
         this._toggleLabels()
       })
+      .catch(err => console.warn('Failed to load borders:', err))
 
     // Guard against container resizes (sidebar flex layout may settle after
     // mount, leaving the Leaflet viewport at 0×0 with blank tiles until an
@@ -212,7 +213,7 @@ export class GuessMap extends LitElement {
     const hasPin = this.selectedLat != null
     return html`
       <div class="guess-map">
-        <div class="guess-map__container"></div>
+        <div class="guess-map__container" tabindex="0" role="application" aria-label="Guess map — click to place your pin"></div>
         <div class="guess-map__actions">
           <button
             class="guess-map__submit"

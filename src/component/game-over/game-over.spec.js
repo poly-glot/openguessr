@@ -113,6 +113,7 @@ describe('GameOver', () => {
   })
 
   it('renders Play Again button', async () => {
+    el.players = [{ uid: 'p1', name: 'Alice', score: 1000, isHost: false }]
     await el.updateComplete
     const btn = el.renderRoot.querySelector('[data-cy="play-again"]')
     expect(btn).toBeTruthy()
@@ -120,6 +121,7 @@ describe('GameOver', () => {
   })
 
   it('renders table headers', async () => {
+    el.players = [{ uid: 'p1', name: 'Alice', score: 1000, isHost: false }]
     await el.updateComplete
     const headers = el.renderRoot.querySelectorAll('th')
     expect(headers.length).toBe(3)
@@ -131,8 +133,8 @@ describe('GameOver', () => {
   it('handles empty players array', async () => {
     el.players = []
     await el.updateComplete
-    const rows = el.renderRoot.querySelectorAll('tbody tr')
-    expect(rows.length).toBe(0)
+    const noPlayers = el.renderRoot.querySelector('p')
+    expect(noPlayers.textContent).toBe('No players')
     const winner = el.renderRoot.querySelector('[data-cy="winner"]')
     expect(winner).toBeNull()
   })

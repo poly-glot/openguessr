@@ -16,6 +16,10 @@ export function initLanding () {
     app.hidden = true
   }
 
+  // Guard against duplicate listener attachment on re-init
+  if (landing.dataset.listenersAttached) return
+  landing.dataset.listenersAttached = 'true'
+
   document.querySelectorAll('[data-action="start-game"]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault()

@@ -63,7 +63,7 @@ describe('Firebase Cloud Functions', () => {
 
     it('should generate uid from username', async () => {
       const result = await loginFunction({ data: { username: 'Test User' } })
-      expect(result.uid).toMatch(/^test-user-\d+$/)
+      expect(result.uid).toMatch(/^test-user-[a-f0-9-]+$/)
     })
   })
 
