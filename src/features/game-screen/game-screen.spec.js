@@ -2,24 +2,31 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // These must be hoisted so they're in place before any import
 const mockGetAuth = vi.fn(() => ({ currentUser: { uid: 'test-uid', displayName: 'TestUser' } }))
-const mockDatabase = {
-  _username: 'MockUser',
-  joinGame: vi.fn().mockResolvedValue({}),
-  createGame: vi.fn().mockResolvedValue('new-room-id'),
-  submitGuess: vi.fn().mockResolvedValue({ score: 3000, distanceKm: 120 }),
-  submitMiss: vi.fn().mockResolvedValue({ score: 0 }),
-  startGame: vi.fn().mockResolvedValue({}),
-  nextRound: vi.fn().mockResolvedValue({}),
-  transferHost: vi.fn().mockResolvedValue({}),
-  signOut: vi.fn().mockResolvedValue(),
-  listenGameChanges: vi.fn(),
-  listenPlayers: vi.fn(),
-  listenPromotionRequests: vi.fn(),
-  requestHostPromotion: vi.fn().mockResolvedValue({ success: true }),
-  voteOnHostPromotion: vi.fn().mockResolvedValue({ success: true }),
-  resolveHostPromotion: vi.fn().mockResolvedValue({ success: true }),
-  cleanup: vi.fn()
+
+function createMockDatabase () {
+  return {
+    _username: 'MockUser',
+    joinGame: vi.fn().mockResolvedValue({}),
+    createGame: vi.fn().mockResolvedValue('new-room-id'),
+    submitGuess: vi.fn().mockResolvedValue({ score: 3000, distanceKm: 120 }),
+    submitMiss: vi.fn().mockResolvedValue({ score: 0 }),
+    startGame: vi.fn().mockResolvedValue({}),
+    nextRound: vi.fn().mockResolvedValue({}),
+    transferHost: vi.fn().mockResolvedValue({}),
+    signOut: vi.fn().mockResolvedValue(),
+    listenGameChanges: vi.fn(),
+    listenPlayers: vi.fn(),
+    listenPromotionRequests: vi.fn(),
+    requestHostPromotion: vi.fn().mockResolvedValue({ success: true }),
+    voteOnHostPromotion: vi.fn().mockResolvedValue({ success: true }),
+    resolveHostPromotion: vi.fn().mockResolvedValue({ success: true }),
+    cleanup: vi.fn(),
+    listenConnection: vi.fn(),
+    setupPresence: vi.fn()
+  }
 }
+
+const mockDatabase = createMockDatabase()
 const mockAlertService = { announce: vi.fn() }
 
 vi.mock('firebase/auth', () => ({
@@ -47,6 +54,8 @@ describe('GameView', () => {
   let GameView, el
 
   beforeEach(async () => {
+    // Reset mockDatabase to fresh fns each test to prevent cross-test bleed
+    Object.assign(mockDatabase, createMockDatabase())
     vi.clearAllMocks()
 
     // Create app-view with toolbar

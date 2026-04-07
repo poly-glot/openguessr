@@ -259,7 +259,7 @@ export class StreetViewPanel extends LitElement {
 
     return html`
       <div class="street-view">
-        <div class="street-view__panorama" data-cy="street-view-panorama"></div>
+        <div class="street-view__panorama" data-cy="street-view-panorama" aria-label="Street View panorama — drag to look around" role="application"></div>
         ${showHint ? html`<div class="street-view__hint">Drag to look around</div>` : ''}
         <slot></slot>
       </div>

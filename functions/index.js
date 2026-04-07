@@ -45,6 +45,7 @@ function distanceScore (distanceKm) {
 }
 
 const validUsernamePattern = /^[a-z\d\-_\s]+$/i
+const validRoomIdPattern = /^[a-zA-Z0-9_-]+$/
 
 exports.login = onCall(
   { enforceAppCheck: false, region },
@@ -55,7 +56,7 @@ exports.login = onCall(
       throw new HttpsError('failed-precondition', 'Invalid username. Username should be less than 32 characters and contain alphanumeric & space characters only.')
     }
 
-    const uid = username.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now()
+    const uid = username.toLowerCase().replace(/\s+/g, '-') + '-' + uuid()
     const token = await getAuth().createCustomToken(uid)
 
     return { token, uid }
@@ -123,8 +124,8 @@ exports.joinGame = onCall(
     }
 
     const { roomId, username } = request.data
-    if (!roomId) {
-      throw new HttpsError('invalid-argument', 'roomId is required')
+    if (!roomId || !validRoomIdPattern.test(roomId)) {
+      throw new HttpsError('invalid-argument', 'roomId is required and must be alphanumeric')
     }
 
     const database = db()
@@ -163,7 +164,7 @@ exports.submitGuess = onCall(
     }
 
     const { roomId, round, lat, lng } = request.data
-    if (!roomId || round === undefined || typeof lat !== 'number' || typeof lng !== 'number') {
+    if (!roomId || !validRoomIdPattern.test(roomId) || round === undefined || typeof lat !== 'number' || typeof lng !== 'number') {
       throw new HttpsError('invalid-argument', 'roomId, round, lat, and lng are required')
     }
 
@@ -233,7 +234,7 @@ exports.submitMiss = onCall(
     }
 
     const { roomId, round } = request.data
-    if (!roomId || round === undefined) {
+    if (!roomId || !validRoomIdPattern.test(roomId) || round === undefined) {
       throw new HttpsError('invalid-argument', 'roomId and round are required')
     }
 
@@ -285,8 +286,8 @@ exports.nextRound = onCall(
     }
 
     const { roomId } = request.data
-    if (!roomId) {
-      throw new HttpsError('invalid-argument', 'roomId is required')
+    if (!roomId || !validRoomIdPattern.test(roomId)) {
+      throw new HttpsError('invalid-argument', 'roomId is required and must be alphanumeric')
     }
 
     const database = db()
@@ -342,7 +343,7 @@ exports.transferHost = onCall(
     if (!uid) throw new HttpsError('unauthenticated', 'You are not logged in')
 
     const { roomId, targetUid } = request.data
-    if (!roomId || !targetUid) throw new HttpsError('invalid-argument', 'roomId and targetUid are required')
+    if (!roomId || !validRoomIdPattern.test(roomId) || !targetUid) throw new HttpsError('invalid-argument', 'roomId and targetUid are required')
 
     const database = db()
     const gameRef = database.ref(`games/${roomId}`)
@@ -367,8 +368,8 @@ exports.startGame = onCall(
     }
 
     const { roomId } = request.data
-    if (!roomId) {
-      throw new HttpsError('invalid-argument', 'roomId is required')
+    if (!roomId || !validRoomIdPattern.test(roomId)) {
+      throw new HttpsError('invalid-argument', 'roomId is required and must be alphanumeric')
     }
 
     const database = db()
@@ -493,8 +494,18 @@ exports.seedLocationPool = onCall(
     const uid = request.auth?.uid
     if (!uid) throw new HttpsError('unauthenticated', 'You are not logged in')
 
-    const maxPoolSize = 500
+    // Only allow users who are currently hosting an active game
     const database = db()
+    const gamesSnapshot = await database.ref('games')
+      .orderByChild('hostId')
+      .equalTo(uid)
+      .limitToFirst(1)
+      .get()
+    if (!gamesSnapshot.exists()) {
+      throw new HttpsError('permission-denied', 'Only active game hosts can seed the location pool')
+    }
+
+    const maxPoolSize = 500
     const poolRef = database.ref('location-pool')
     const snapshot = await poolRef.once('value')
     const currentSize = snapshot.numChildren()
@@ -522,7 +533,7 @@ exports.requestHostPromotion = onCall(
     if (!uid) throw new HttpsError('unauthenticated', 'You are not logged in')
 
     const { roomId } = request.data
-    if (!roomId) throw new HttpsError('invalid-argument', 'roomId is required')
+    if (!roomId || !validRoomIdPattern.test(roomId)) throw new HttpsError('invalid-argument', 'roomId is required and must be alphanumeric')
 
     const database = db()
     const gameRef = database.ref(`games/${roomId}`)
@@ -592,7 +603,7 @@ exports.voteOnHostPromotion = onCall(
     if (!uid) throw new HttpsError('unauthenticated', 'You are not logged in')
 
     const { roomId, vote } = request.data
-    if (!roomId || typeof vote !== 'boolean') {
+    if (!roomId || !validRoomIdPattern.test(roomId) || typeof vote !== 'boolean') {
       throw new HttpsError('invalid-argument', 'roomId and vote (boolean) are required')
     }
 
@@ -642,7 +653,7 @@ exports.resolveHostPromotion = onCall(
     if (!uid) throw new HttpsError('unauthenticated', 'You are not logged in')
 
     const { roomId } = request.data
-    if (!roomId) throw new HttpsError('invalid-argument', 'roomId is required')
+    if (!roomId || !validRoomIdPattern.test(roomId)) throw new HttpsError('invalid-argument', 'roomId is required and must be alphanumeric')
 
     const database = db()
     const requestRef = database.ref(`promotionRequests/${roomId}`)
@@ -666,17 +677,16 @@ exports.resolveHostPromotion = onCall(
 
 /**
  * Calculate vote result and transfer host if approved.
- * Non-voters count as implicit approvals.
+ * Requires explicit majority — non-voters do not count toward either side.
+ * Among those who voted, approvals must exceed rejections.
  */
 async function resolveHostPromotionRequest (database, roomId, data) {
   const votes = data.votes || {}
   const voteEntries = Object.values(votes)
   const explicitApprovals = voteEntries.filter(v => v.vote === true).length
   const explicitRejections = voteEntries.filter(v => v.vote === false).length
-  const nonVoters = data.memberCount - voteEntries.length
 
-  const totalApprovals = explicitApprovals + nonVoters
-  const approved = totalApprovals >= explicitRejections
+  const approved = explicitApprovals > explicitRejections
 
   const result = approved ? 'approved' : 'denied'
 

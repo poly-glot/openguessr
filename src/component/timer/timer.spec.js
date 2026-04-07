@@ -91,6 +91,7 @@ describe('RoundTimer', () => {
   })
 
   it('dispatches timer-expired when time runs out', async () => {
+    vi.useFakeTimers()
     const handler = vi.fn()
     el.addEventListener('timer-expired', handler)
 
@@ -99,12 +100,14 @@ describe('RoundTimer', () => {
     el.startedAt = Date.now() - 31000
     await el.updateComplete
 
-    // Wait for tick interval to fire
-    await new Promise(resolve => setTimeout(resolve, 350))
+    // Advance past the tick interval (250ms)
+    vi.advanceTimersByTime(300)
 
     expect(handler).toHaveBeenCalled()
     expect(handler.mock.calls[0][0].bubbles).toBe(true)
     expect(handler.mock.calls[0][0].composed).toBe(true)
+
+    vi.useRealTimers()
   })
 
   it('stop() clears the interval', async () => {

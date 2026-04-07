@@ -84,6 +84,13 @@ export class GameOver extends LitElement {
   }
 
   render () {
+    if (!this.players?.length) {
+      return html`<div class="game-over" data-cy="game-over">
+        <h2 class="game-over__title">Game Over!</h2>
+        <p>No players</p>
+      </div>`
+    }
+
     const winner = this.players[0]
     const isWinner = winner && winner.uid === this.currentUid
     const maxScore = this.totalRounds * 5000
