@@ -104,7 +104,7 @@ describe('Firebase Cloud Functions', () => {
       const game = snapshot.val()
 
       expect(game.totalRounds).toBe(5)
-      expect(game.roundTime).toBe(30)
+      expect(game.roundTime).toBe(60)
       expect(game.status).toBe('waiting')
       expect(game.currentRound).toBe(0)
       expect(game.hostId).toBe('host-create-2')
@@ -320,8 +320,12 @@ describe('Firebase Cloud Functions', () => {
 
       expect(result.score).toBe(5000)
       expect(result.distanceKm).toBe(0)
-      expect(result.answerLat).toBe(lat)
-      expect(result.answerLng).toBe(lng)
+      // submitGuess no longer leaks the answer to the caller.
+      expect(result.answerLat).toBeUndefined()
+      expect(result.answerLng).toBeUndefined()
+      // Sole player has guessed → server flips reveal.
+      const revealedSnap = await db.ref(`games/${roomId}/rounds/0/revealed`).get()
+      expect(revealedSnap.val()).toBe(true)
     })
 
     it('should return low score for a guess far from the answer', async () => {

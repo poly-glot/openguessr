@@ -72,6 +72,10 @@ export class GameDatabase {
     return callFunction('submitMiss', { roomId, round })
   }
 
+  async revealRound (roomId, round) {
+    return callFunction('revealRound', { roomId, round })
+  }
+
   async nextRound (roomId) {
     return callFunction('nextRound', { roomId })
   }

@@ -11,7 +11,7 @@ import '../../component/leaderboard'
 import '../../component/game-over'
 import '../../component/promotion-dialog'
 
-const ROUND_TIME = 30
+const ROUND_TIME = 60
 
 export class GameView extends LitElement {
   static properties = {
@@ -33,11 +33,15 @@ export class GameView extends LitElement {
 
     .game-layout {
       display: grid;
-      grid-template-columns: 1fr 440px;
+      grid-template-columns: 1fr 560px;
       grid-template-rows: 1fr;
       flex: 1;
       min-height: 0;
       overflow: hidden;
+    }
+
+    @media (max-width: 1280px) {
+      .game-layout { grid-template-columns: 1fr 480px; }
     }
 
     .game-main {
@@ -126,6 +130,54 @@ export class GameView extends LitElement {
       flex-shrink: 0;
     }
 
+    .round-wait {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 90;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: rgba(17, 17, 17, 0.85);
+      color: #fff;
+      border-radius: 999px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+      max-width: calc(100% - 24px);
+    }
+
+    .round-wait__pulse {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      animation: roundWaitSpin 1s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .round-wait__title {
+      font-weight: 700;
+    }
+
+    .round-wait__message {
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .round-wait__sep {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    @keyframes roundWaitSpin {
+      to { transform: rotate(360deg); }
+    }
+
     @media (max-width: 900px) {
       /* Fit the whole game into one viewport — avoids fighting the maps
          for vertical touch gestures. Each half is interactive and sized;
@@ -165,6 +217,8 @@ export class GameView extends LitElement {
     this._disconnected = false
     this._promotionData = null
     this._journeyInProgress = false
+    this._myGuess = null
+    this._revealRequested = false
   }
 
   // ── Entry point ─────────────────────────────────────────────
@@ -380,6 +434,8 @@ export class GameView extends LitElement {
         this._currentRound = state.currentRound
         this._hasGuessed = false
         this._scoreResult = null
+        this._myGuess = null
+        this._revealRequested = false
         this._roundInProgress = true
 
         const guessMap = this.renderRoot.querySelector('guess-map')
@@ -396,6 +452,27 @@ export class GameView extends LitElement {
     }
 
     this._checkAlreadyGuessed(state)
+    this._checkRoundReveal(state)
+  }
+
+  _checkRoundReveal (state) {
+    const round = state?.rounds?.[state.currentRound]
+    if (!round?.revealed) return
+    if (this._scoreResult) return
+
+    const uid = this._getCurrentUid()
+    const myGuess = state.players?.[uid]?.guesses?.[state.currentRound]
+    const guessLat = myGuess?.lat ?? this._myGuess?.lat ?? null
+    const guessLng = myGuess?.lng ?? this._myGuess?.lng ?? null
+
+    this._scoreResult = {
+      score: myGuess?.score ?? 0,
+      distanceKm: myGuess?.distanceKm ?? null,
+      guessLat,
+      guessLng,
+      answerLat: round.lat,
+      answerLng: round.lng
+    }
   }
 
   _syncHostState (state) {
@@ -429,6 +506,7 @@ export class GameView extends LitElement {
   }
 
   _checkAlreadyGuessed (state) {
+    if (!state) return
     const uid = this._getCurrentUid()
     if (uid && state.players?.[uid]?.guesses?.[state.currentRound]) {
       if (!this._hasGuessed) {
@@ -444,30 +522,37 @@ export class GameView extends LitElement {
     if (lat == null || lng == null || this._hasGuessed) return
 
     this._hasGuessed = true
+    this._myGuess = { lat, lng }
 
     try {
-      const result = await database.submitGuess(this.roomId, this._currentRound, lat, lng)
-
-      const round = this._getRound()
-      this._scoreResult = {
-        score: result.score,
-        distanceKm: result.distanceKm,
-        guessLat: lat,
-        guessLng: lng,
-        answerLat: round?.lat,
-        answerLng: round?.lng
-      }
+      await database.submitGuess(this.roomId, this._currentRound, lat, lng)
+      AlertService.announce('Guess locked in — waiting for the round to end')
     } catch (err) {
       AlertService.announce('Error submitting guess: ' + err.message)
       this._hasGuessed = false
+      this._myGuess = null
     }
   }
 
-  _onTimerExpired () {
-    if (this._hasGuessed) return
+  async _onTimerExpired () {
     this._checkAlreadyGuessed(this._gameState)
-    if (this._hasGuessed) return
-    this._autoSubmit()
+    if (!this._hasGuessed) {
+      await this._autoSubmit()
+    }
+    this._requestReveal()
+  }
+
+  _requestReveal () {
+    if (this._revealRequested) return
+    const round = this._gameState?.rounds?.[this._currentRound]
+    if (round?.revealed) return
+    this._revealRequested = true
+
+    database.revealRound(this.roomId, this._currentRound).catch(() => {
+      // Server may legitimately reject (e.g. clock skew vs. roundStartedAt);
+      // the listener will pick the round up once another path triggers it.
+      this._revealRequested = false
+    })
   }
 
   async _autoSubmit () {
@@ -477,24 +562,16 @@ export class GameView extends LitElement {
 
     if (lat != null && lng != null) {
       await this._onGuess({ detail: { lat, lng } })
-    } else {
-      this._hasGuessed = true
+      return
+    }
 
-      try {
-        await database.submitMiss(this.roomId, this._currentRound)
-      } catch (err) {
-        AlertService.announce('Failed to submit — please refresh')
-      }
+    this._hasGuessed = true
+    this._myGuess = null
 
-      const round = this._getRound()
-      this._scoreResult = {
-        score: 0,
-        distanceKm: null,
-        guessLat: null,
-        guessLng: null,
-        answerLat: round?.lat,
-        answerLng: round?.lng
-      }
+    try {
+      await database.submitMiss(this.roomId, this._currentRound)
+    } catch (err) {
+      AlertService.announce('Failed to submit — please refresh')
     }
   }
 
@@ -737,7 +814,14 @@ export class GameView extends LitElement {
                 ?waiting-for-host=${this._hasGuessed && !this._isHost && isPlaying}
                 @score-closed=${this._onScoreClosed}
               ></result-map>
-            ` : ''}
+            ` : (this._hasGuessed && isPlaying ? html`
+              <div class="round-wait" data-cy="round-wait" role="status">
+                <span class="round-wait__pulse" aria-hidden="true"></span>
+                <span class="round-wait__title">Guess locked in</span>
+                <span class="round-wait__sep" aria-hidden="true">·</span>
+                <span class="round-wait__message">keep exploring while we wait</span>
+              </div>
+            ` : '')}
           </div>
         </div>
 

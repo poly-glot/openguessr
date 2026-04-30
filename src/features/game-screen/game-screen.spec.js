@@ -10,6 +10,7 @@ function createMockDatabase () {
     createGame: vi.fn().mockResolvedValue('new-room-id'),
     submitGuess: vi.fn().mockResolvedValue({ score: 3000, distanceKm: 120 }),
     submitMiss: vi.fn().mockResolvedValue({ score: 0 }),
+    revealRound: vi.fn().mockResolvedValue({ revealed: true, reason: 'timer' }),
     startGame: vi.fn().mockResolvedValue({}),
     nextRound: vi.fn().mockResolvedValue({}),
     transferHost: vi.fn().mockResolvedValue({}),
@@ -329,7 +330,7 @@ describe('GameView', () => {
   })
 
   describe('_onGuess', () => {
-    it('submits guess and sets score result', async () => {
+    it('submits guess and locks input but does not reveal answer yet', async () => {
       el.roomId = 'room1'
       el._currentRound = 0
       el._hasGuessed = false
@@ -340,10 +341,9 @@ describe('GameView', () => {
 
       expect(mockDatabase.submitGuess).toHaveBeenCalledWith('room1', 0, 50, 0)
       expect(el._hasGuessed).toBe(true)
-      expect(el._scoreResult.score).toBe(3000)
-      expect(el._scoreResult.distanceKm).toBe(120)
-      expect(el._scoreResult.guessLat).toBe(50)
-      expect(el._scoreResult.guessLng).toBe(0)
+      expect(el._myGuess).toEqual({ lat: 50, lng: 0 })
+      // Reveal-gate: result UI must remain hidden until rounds[r].revealed flips
+      expect(el._scoreResult).toBeNull()
     })
 
     it('does not submit when already guessed', async () => {
@@ -368,20 +368,44 @@ describe('GameView', () => {
 
       expect(mockAlertService.announce).toHaveBeenCalledWith('Error submitting guess: Network error')
       expect(el._hasGuessed).toBe(false)
+      expect(el._myGuess).toBeNull()
     })
   })
 
   describe('_onTimerExpired', () => {
-    it('does nothing when already guessed', () => {
+    it('skips auto-submit when already guessed but still requests reveal', async () => {
+      el.roomId = 'room1'
+      el._currentRound = 0
       el._hasGuessed = true
+      el._gameState = { currentRound: 0, rounds: [{ revealed: false }], players: {} }
       const autoSpy = vi.spyOn(el, '_autoSubmit')
-      el._onTimerExpired()
+      await el._onTimerExpired()
       expect(autoSpy).not.toHaveBeenCalled()
+      expect(mockDatabase.revealRound).toHaveBeenCalledWith('room1', 0)
+    })
+
+    it('auto-submits then requests reveal when timer fires before guess', async () => {
+      el.roomId = 'room1'
+      el._currentRound = 0
+      el._hasGuessed = false
+      el._gameState = { currentRound: 0, rounds: [{ revealed: false }], players: {} }
+      await el._onTimerExpired()
+      expect(mockDatabase.submitMiss).toHaveBeenCalledWith('room1', 0)
+      expect(mockDatabase.revealRound).toHaveBeenCalledWith('room1', 0)
+    })
+
+    it('does not call revealRound when round is already revealed', async () => {
+      el.roomId = 'room1'
+      el._currentRound = 0
+      el._hasGuessed = true
+      el._gameState = { currentRound: 0, rounds: [{ revealed: true }], players: {} }
+      await el._onTimerExpired()
+      expect(mockDatabase.revealRound).not.toHaveBeenCalled()
     })
   })
 
   describe('_autoSubmit', () => {
-    it('submits miss when no guess placed on map', async () => {
+    it('submits miss when no guess placed on map and waits for reveal', async () => {
       el.roomId = 'room1'
       el._currentRound = 0
       el._gameState = { rounds: [{ lat: 51.5, lng: -0.1 }], currentRound: 0 }
@@ -391,9 +415,41 @@ describe('GameView', () => {
 
       expect(mockDatabase.submitMiss).toHaveBeenCalledWith('room1', 0)
       expect(el._hasGuessed).toBe(true)
-      expect(el._scoreResult.score).toBe(0)
-      expect(el._scoreResult.guessLat).toBeNull()
-      expect(el._scoreResult.guessLng).toBeNull()
+      expect(el._myGuess).toBeNull()
+      // No score until reveal flips on
+      expect(el._scoreResult).toBeNull()
+    })
+  })
+
+  describe('_checkRoundReveal', () => {
+    it('builds score result from player guesses once round.revealed flips', () => {
+      el._currentRound = 0
+      el._scoreResult = null
+      const state = {
+        currentRound: 0,
+        rounds: [{ revealed: true, lat: 11, lng: 21 }],
+        players: { 'test-uid': { guesses: { 0: { lat: 10, lng: 20, score: 4200, distanceKm: 80 } } } }
+      }
+      el._checkRoundReveal(state)
+      expect(el._scoreResult).toEqual({
+        score: 4200,
+        distanceKm: 80,
+        guessLat: 10,
+        guessLng: 20,
+        answerLat: 11,
+        answerLng: 21
+      })
+    })
+
+    it('does nothing when round is not revealed', () => {
+      el._currentRound = 0
+      el._scoreResult = null
+      el._checkRoundReveal({
+        currentRound: 0,
+        rounds: [{ revealed: false, lat: 11, lng: 21 }],
+        players: {}
+      })
+      expect(el._scoreResult).toBeNull()
     })
   })
 
