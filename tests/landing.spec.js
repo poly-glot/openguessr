@@ -60,7 +60,7 @@ test.describe('Landing Page', () => {
 
   test('should have valid GitHub links', async ({ page }) => {
     const sourceLink = page.locator('.site__header-nav a')
-    await expect(sourceLink).toHaveAttribute('href', /github\.com\/nicholasgasior/)
+    await expect(sourceLink).toHaveAttribute('href', /github\.com\/poly-glot/)
   })
 
   test('footer Start Game link should trigger game flow', async ({ page }) => {

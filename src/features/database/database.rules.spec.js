@@ -6,8 +6,8 @@ const HOST_UID = 'host-user'
 const PLAYER_UID = 'player-user'
 const OTHER_UID = 'other-user'
 
-function seedGame () {
-  return globalThis.adminSeed(`games/${ROOM_ID}`, {
+async function seedGame () {
+  await globalThis.adminSeed(`games/${ROOM_ID}`, {
     hostId: HOST_UID,
     status: 'playing',
     currentRound: 0,
@@ -16,13 +16,21 @@ function seedGame () {
     totalRounds: 5,
     createdAt: Date.now(),
     rounds: {
-      0: { lat: 48.8566, lng: 2.3522, revealed: false },
+      0: { revealed: false },
       1: { lat: 51.5074, lng: -0.1278, country: 'GB', revealed: true }
     },
+    currentLocation: { round: 0, lat: 48.8566, lng: 2.3522 },
     players: {
       [HOST_UID]: { name: 'Host', score: 0, joinedAt: Date.now() },
       [PLAYER_UID]: { name: 'Player', score: 0, joinedAt: Date.now() }
     }
+  })
+  await globalThis.adminSeed(`game-coords/${ROOM_ID}`, {
+    0: { lat: 48.8566, lng: 2.3522 },
+    1: { lat: 51.5074, lng: -0.1278 },
+    2: { lat: 35.6762, lng: 139.6503 },
+    3: { lat: -33.8688, lng: 151.2093 },
+    4: { lat: 40.7128, lng: -74.0060 }
   })
 }
 
@@ -59,6 +67,16 @@ describe('Database Rules', () => {
     it('Disallow writing location-pool', async () => {
       await firebase.assertFails(
         db.ref('location-pool/test').set({ lat: 0, lng: 0, country: 'XX' })
+      )
+    })
+
+    it('Disallow reading game-coords', async () => {
+      await firebase.assertFails(db.ref(`game-coords/${ROOM_ID}`).once('value'))
+    })
+
+    it('Disallow writing game-coords', async () => {
+      await firebase.assertFails(
+        db.ref(`game-coords/${ROOM_ID}/0`).set({ lat: 0, lng: 0 })
       )
     })
   })
@@ -514,6 +532,54 @@ describe('Database Rules', () => {
           score: 0
         })
       )
+    })
+  })
+
+  // ── Authenticated users - coord & location paths ─────────────
+
+  describe('Authenticated users - coord and location paths', () => {
+    let db
+
+    beforeEach(async () => {
+      await seedGame()
+      db = globalThis.authedApp({ uid: PLAYER_UID })
+    })
+
+    it('Cannot read game-coords path', async () => {
+      await firebase.assertFails(db.ref(`game-coords/${ROOM_ID}`).once('value'))
+    })
+
+    it('Cannot read a single game-coords entry', async () => {
+      await firebase.assertFails(db.ref(`game-coords/${ROOM_ID}/0`).once('value'))
+    })
+
+    it('Cannot write game-coords', async () => {
+      await firebase.assertFails(
+        db.ref(`game-coords/${ROOM_ID}/0`).set({ lat: 0, lng: 0 })
+      )
+    })
+
+    it('Can read currentLocation as part of game node', async () => {
+      await firebase.assertSucceeds(db.ref(`games/${ROOM_ID}/currentLocation`).once('value'))
+    })
+
+    it('Cannot write currentLocation', async () => {
+      await firebase.assertFails(
+        db.ref(`games/${ROOM_ID}/currentLocation`).set({ round: 0, lat: 0, lng: 0 })
+      )
+    })
+
+    it('Cannot write to a round entry', async () => {
+      await firebase.assertFails(
+        db.ref(`games/${ROOM_ID}/rounds/0`).set({ revealed: true, lat: 1, lng: 1 })
+      )
+    })
+
+    it('Pre-reveal round entry has no lat/lng', async () => {
+      const snap = await db.ref(`games/${ROOM_ID}/rounds/0`).once('value')
+      const round = snap.val()
+      if (round.lat !== undefined) throw new Error('Expected no lat on unrevealed round')
+      if (round.lng !== undefined) throw new Error('Expected no lng on unrevealed round')
     })
   })
 })

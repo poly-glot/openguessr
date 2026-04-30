@@ -5,6 +5,14 @@
     "games": {
       "$roomId": {
         ".read": "auth != null",
+        "currentLocation": {
+          ".write": false
+        },
+        "rounds": {
+          "$round": {
+            ".write": false
+          }
+        },
         "players": {
           "$uid": {
             "name": {
@@ -29,6 +37,10 @@
       }
     },
     "game-answers": {
+      ".read": false,
+      ".write": false
+    },
+    "game-coords": {
       ".read": false,
       ".write": false
     },
