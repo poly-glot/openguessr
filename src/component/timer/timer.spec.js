@@ -19,8 +19,8 @@ describe('RoundTimer', () => {
 
   it('has correct default property values', () => {
     expect(el.startedAt).toBe(0)
-    expect(el.duration).toBe(30)
-    expect(el._timeRemaining).toBe(30)
+    expect(el.duration).toBe(60)
+    expect(el._timeRemaining).toBe(60)
     expect(el._done).toBe(false)
   })
 

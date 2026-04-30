@@ -76,7 +76,7 @@ export class RoundTimer extends LitElement {
   constructor () {
     super()
     this.startedAt = 0
-    this.duration = 30
+    this.duration = 60
     this._timeRemaining = this.duration
     this._done = false
     this._interval = null

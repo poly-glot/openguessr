@@ -79,10 +79,12 @@ export class GuessMap extends LitElement {
         background: none;
         border: none;
         box-shadow: none;
-        font-size: 10px;
-        font-weight: 500;
-        color: #999;
+        font-size: 11px;
+        font-weight: 600;
+        color: #444;
+        text-shadow: 0 0 3px #fff, 0 0 3px #fff;
         white-space: nowrap;
+        pointer-events: none;
       }
 
       .country-label::before {
@@ -126,8 +128,8 @@ export class GuessMap extends LitElement {
 
     this._map = L.map(container, {
       center: [20, 0],
-      zoom: 1,
-      minZoom: 1,
+      zoom: 3,
+      minZoom: 2,
       worldCopyJump: true,
       backgroundColor: '#fff'
     })
@@ -196,7 +198,7 @@ export class GuessMap extends LitElement {
     this.selectedLat = null
     this.selectedLng = null
     if (this._map) {
-      this._map.setView([20, 0], 1)
+      this._map.setView([20, 0], 3)
     }
   }
 

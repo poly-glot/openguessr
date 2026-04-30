@@ -159,10 +159,12 @@ export class ResultMap extends LitElement {
         background: none;
         border: none;
         box-shadow: none;
-        font-size: 10px;
-        font-weight: 500;
-        color: #999;
+        font-size: 11px;
+        font-weight: 600;
+        color: #444;
+        text-shadow: 0 0 3px #fff, 0 0 3px #fff;
         white-space: nowrap;
+        pointer-events: none;
       }
 
       .country-label::before {

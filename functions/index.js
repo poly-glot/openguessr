@@ -27,7 +27,7 @@ function db () {
 
 const region = 'europe-west2'
 const TOTAL_ROUNDS = 5
-const ROUND_TIME = 30
+const ROUND_TIME = 60
 
 function haversineKm (lat1, lng1, lat2, lng2) {
   const R = 6371
@@ -42,6 +42,43 @@ function haversineKm (lat1, lng1, lat2, lng2) {
 function distanceScore (distanceKm) {
   if (distanceKm <= 0) return 5000
   return Math.round(5000 * Math.exp(-distanceKm / 2000))
+}
+
+/**
+ * Reveal a round if all online players have guessed for it.
+ * Idempotent: a no-op when already revealed or when guesses are still missing.
+ * Returns the resolved game snapshot for callers that need follow-up state.
+ */
+async function maybeRevealRound (database, roomId, round) {
+  const gameRef = database.ref(`games/${roomId}`)
+  const snapshot = await gameRef.get()
+  if (!snapshot.exists()) return null
+
+  const game = snapshot.val()
+  const roundData = game.rounds?.[round]
+  if (!roundData || roundData.revealed) return game
+
+  const players = game.players || {}
+  const activeUids = Object.entries(players)
+    .filter(([, p]) => p && p.online !== false)
+    .map(([uid]) => uid)
+
+  if (activeUids.length === 0) return game
+
+  const allGuessed = activeUids.every(uid => players[uid]?.guesses?.[round])
+  if (!allGuessed) return game
+
+  await revealRoundCountry(database, roomId, round)
+  return game
+}
+
+async function revealRoundCountry (database, roomId, round) {
+  const answerSnapshot = await database.ref(`game-answers/${roomId}/${round}`).get()
+  const country = answerSnapshot.val()
+  await database.ref(`games/${roomId}/rounds/${round}`).update({
+    revealed: true,
+    country: country || null
+  })
 }
 
 const validUsernamePattern = /^[a-z\d\-_\s]+$/i
@@ -216,11 +253,11 @@ exports.submitGuess = onCall(
     const scoreRef = gameRef.child(`players/${uid}/score`)
     await scoreRef.transaction((currentScore) => (currentScore || 0) + score)
 
+    await maybeRevealRound(database, roomId, round)
+
     return {
       score,
-      distanceKm: Math.round(distanceKm * 10) / 10,
-      answerLat: roundData.lat,
-      answerLng: roundData.lng
+      distanceKm: Math.round(distanceKm * 10) / 10
     }
   }
 )
@@ -273,7 +310,72 @@ exports.submitMiss = onCall(
 
     await gameRef.update(updates)
 
+    await maybeRevealRound(database, roomId, round)
+
     return { score: 0, distanceKm: null }
+  }
+)
+
+exports.revealRound = onCall(
+  { enforceAppCheck: false, region },
+  async (request) => {
+    const uid = request.auth?.uid
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'You are not logged in')
+    }
+
+    const { roomId, round } = request.data
+    if (!roomId || !validRoomIdPattern.test(roomId) || round === undefined) {
+      throw new HttpsError('invalid-argument', 'roomId and round are required')
+    }
+
+    const database = db()
+    const gameRef = database.ref(`games/${roomId}`)
+    const snapshot = await gameRef.get()
+
+    if (!snapshot.exists()) {
+      throw new HttpsError('not-found', 'Game not found')
+    }
+
+    const game = snapshot.val()
+    if (!game.players?.[uid]) {
+      throw new HttpsError('permission-denied', 'You are not a player in this game')
+    }
+
+    if (round !== game.currentRound) {
+      throw new HttpsError('failed-precondition', 'Not the current round')
+    }
+
+    const roundData = game.rounds?.[round]
+    if (!roundData) {
+      throw new HttpsError('not-found', 'Round not found')
+    }
+
+    if (roundData.revealed) {
+      return { revealed: true, reason: 'already' }
+    }
+
+    const startedAt = game.roundStartedAt || 0
+    const duration = (game.roundTime || ROUND_TIME) * 1000
+    const elapsedMs = Date.now() - startedAt
+    const timerExpired = startedAt > 0 && elapsedMs >= duration
+
+    const players = game.players || {}
+    const activeUids = Object.entries(players)
+      .filter(([, p]) => p && p.online !== false)
+      .map(([uid]) => uid)
+    const allGuessed = activeUids.length > 0 &&
+      activeUids.every(u => players[u]?.guesses?.[round])
+
+    if (!timerExpired && !allGuessed) {
+      throw new HttpsError(
+        'failed-precondition',
+        'Reveal conditions not met: timer running and not all players have guessed'
+      )
+    }
+
+    await revealRoundCountry(database, roomId, round)
+    return { revealed: true, reason: timerExpired ? 'timer' : 'allGuessed' }
   }
 )
 
@@ -306,13 +408,10 @@ exports.nextRound = onCall(
 
     const currentRound = game.currentRound
 
-    // Reveal current round answer — copy country from answers to the round
-    const answerSnapshot = await database.ref(`game-answers/${roomId}/${currentRound}`).get()
-    const country = answerSnapshot.val()
-    await gameRef.child(`rounds/${currentRound}`).update({
-      revealed: true,
-      country: country || null
-    })
+    // Idempotent reveal — round may have already been revealed by submit/timer paths
+    if (!game.rounds?.[currentRound]?.revealed) {
+      await revealRoundCountry(database, roomId, currentRound)
+    }
 
     const nextRound = currentRound + 1
 
