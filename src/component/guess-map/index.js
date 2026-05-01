@@ -1,6 +1,7 @@
 import { LitElement, html, css, unsafeCSS } from 'lit'
 import L from 'leaflet'
 import leafletCss from 'leaflet/dist/leaflet.css?inline'
+import { GEO_NAME_ALIASES, COUNTRY_CENTROIDS, getCountryByCode } from '../../data/countries'
 
 // Fix Leaflet default icon paths broken by bundlers
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
@@ -102,6 +103,9 @@ export class GuessMap extends LitElement {
     this._map = null
     this._marker = null
     this._resizeObserver = null
+    this._featuresByName = new Map()
+    this._geoLayerReady = null
+    this._resolveGeoLayerReady = null
   }
 
   firstUpdated () {
@@ -134,6 +138,8 @@ export class GuessMap extends LitElement {
       backgroundColor: '#fff'
     })
 
+    this._geoLayerReady = new Promise(resolve => { this._resolveGeoLayerReady = resolve })
+
     fetch('/assets/world-borders.geojson')
       .then(r => r.json())
       .then(data => {
@@ -145,8 +151,10 @@ export class GuessMap extends LitElement {
             fillOpacity: 1
           },
           onEachFeature: (feature, layer) => {
-            if (feature.properties?.name) {
-              layer.bindTooltip(feature.properties.name, {
+            const name = feature.properties?.name
+            if (name) {
+              this._featuresByName.set(name, layer)
+              layer.bindTooltip(name, {
                 permanent: true,
                 direction: 'center',
                 className: 'country-label'
@@ -157,6 +165,7 @@ export class GuessMap extends LitElement {
 
         this._map.on('zoomend', () => this._toggleLabels())
         this._toggleLabels()
+        this._resolveGeoLayerReady?.()
       })
       .catch(err => console.warn('Failed to load borders:', err))
 
@@ -170,14 +179,7 @@ export class GuessMap extends LitElement {
 
     this._map.on('click', (e) => {
       if (this.disabled) return
-      this.selectedLat = e.latlng.lat
-      this.selectedLng = e.latlng.lng
-
-      if (this._marker) {
-        this._marker.setLatLng(e.latlng)
-      } else {
-        this._marker = L.marker(e.latlng).addTo(this._map)
-      }
+      this._setMarker(e.latlng.lat, e.latlng.lng)
     })
   }
 
@@ -200,6 +202,43 @@ export class GuessMap extends LitElement {
     if (this._map) {
       this._map.setView([20, 0], 3)
     }
+  }
+
+  // Drop a marker at lat/lng — separated out so the combobox flow shares
+  // the same selection state as a manual map click.
+  _setMarker (lat, lng) {
+    this.selectedLat = lat
+    this.selectedLng = lng
+    const ll = L.latLng(lat, lng)
+    if (this._marker) {
+      this._marker.setLatLng(ll)
+    } else if (this._map) {
+      this._marker = L.marker(ll).addTo(this._map)
+    }
+  }
+
+  async flyToCountry (code) {
+    if (this.disabled || !code || !this._map) return
+    const country = getCountryByCode(code)
+    if (!country) return
+
+    const fallback = COUNTRY_CENTROIDS[code]
+    if (fallback) {
+      this._map.flyTo([fallback.lat, fallback.lng], fallback.zoom, { duration: 0.6 })
+      this._setMarker(fallback.lat, fallback.lng)
+      return
+    }
+
+    if (this._geoLayerReady) await this._geoLayerReady
+
+    const lookupName = GEO_NAME_ALIASES[code] || country.name
+    const layer = this._featuresByName.get(lookupName)
+    if (!layer) return
+
+    const bounds = layer.getBounds()
+    this._map.flyToBounds(bounds, { padding: [20, 20], duration: 0.6, maxZoom: 6 })
+    const center = bounds.getCenter()
+    this._setMarker(center.lat, center.lng)
   }
 
   _submit () {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { continents, getFlagUrl, getCountryByCode } from './countries'
+import { continents, getFlagUrl, getCountryByCode, getAllCountriesSorted, FLAG_SPRITE_URL } from './countries'
 
 describe('countries data', () => {
   describe('continents', () => {
@@ -29,12 +29,35 @@ describe('countries data', () => {
   })
 
   describe('getFlagUrl', () => {
-    it('should return flagcdn URL with lowercase code', () => {
-      expect(getFlagUrl('US')).toBe('https://flagcdn.com/w40/us.png')
+    it('points at the bundled sprite with a lowercase symbol id', () => {
+      expect(getFlagUrl('US')).toBe(`${FLAG_SPRITE_URL}#flag-us`)
     })
 
-    it('should handle lowercase input', () => {
-      expect(getFlagUrl('gb')).toBe('https://flagcdn.com/w40/gb.png')
+    it('handles lowercase input', () => {
+      expect(getFlagUrl('gb')).toBe(`${FLAG_SPRITE_URL}#flag-gb`)
+    })
+
+    it('exposes the sprite URL as a local app asset (no external CDN)', () => {
+      expect(FLAG_SPRITE_URL.startsWith('/')).toBe(true)
+      expect(FLAG_SPRITE_URL).not.toMatch(/^https?:/)
+    })
+  })
+
+  describe('getAllCountriesSorted', () => {
+    it('returns every country flat and alphabetical', () => {
+      const all = getAllCountriesSorted()
+      const totalFromContinents = Object.values(continents).flat().length
+      expect(all).toHaveLength(totalFromContinents)
+      const names = all.map(c => c.name)
+      const sorted = [...names].sort((a, b) => a.localeCompare(b))
+      expect(names).toEqual(sorted)
+    })
+
+    it('annotates every country with its continent', () => {
+      const all = getAllCountriesSorted()
+      for (const c of all) {
+        expect(c.continent, `${c.code} missing continent`).toBeTruthy()
+      }
     })
   })
 

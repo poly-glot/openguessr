@@ -107,8 +107,28 @@ export const continents = {
   ]
 }
 
+// world-borders.geojson uses "United States of America", "Republic of Serbia",
+// and "United Republic of Tanzania". Map our short names to the geojson names
+// so guess-map can find the polygon to fly to.
+export const GEO_NAME_ALIASES = {
+  US: 'United States of America',
+  RS: 'Republic of Serbia',
+  TZ: 'United Republic of Tanzania'
+}
+
+// City-states / dependencies the geojson does not carry as separate features.
+// Fall back to a hardcoded centre + zoom for these.
+export const COUNTRY_CENTROIDS = {
+  SG: { lat: 1.3521, lng: 103.8198, zoom: 10 },
+  HK: { lat: 22.3193, lng: 114.1694, zoom: 10 }
+}
+
+// Sprite path is bundled alongside the app (see scripts/build-flag-sprite.js).
+// Use it via <svg><use href={getFlagUrl('US')}/></svg>.
+export const FLAG_SPRITE_URL = '/assets/flags-sprite.svg'
+
 export function getFlagUrl (code) {
-  return `https://flagcdn.com/w40/${code.toLowerCase()}.png`
+  return `${FLAG_SPRITE_URL}#flag-${code.toLowerCase()}`
 }
 
 const _byCode = new Map()
@@ -118,4 +138,16 @@ for (const [continent, countries] of Object.entries(continents)) {
 
 export function getCountryByCode (code) {
   return _byCode.get(code) || null
+}
+
+let _sortedCache = null
+export function getAllCountriesSorted () {
+  if (_sortedCache) return _sortedCache
+  const all = []
+  for (const [continent, countries] of Object.entries(continents)) {
+    for (const c of countries) all.push({ ...c, continent })
+  }
+  all.sort((a, b) => a.name.localeCompare(b.name))
+  _sortedCache = all
+  return all
 }
