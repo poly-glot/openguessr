@@ -53,7 +53,7 @@ async function waitForGameViewState (page, key, predicate, timeout = 10000) {
 }
 
 test.describe('Reveal flow', () => {
-  test('reveal waits for all players or 30s timer; sidebar is wide enough for country labels', async ({ browser }) => {
+  test('reveal waits for all players or 60s timer; sidebar is wide enough for country labels', async ({ browser }) => {
     test.setTimeout(120000)
 
     const aliceCtx = await browser.newContext()

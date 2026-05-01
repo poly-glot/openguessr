@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Country picker preview</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100dvh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #f0f2f5;
+        color: #222;
+      }
+      .wrap { max-width: 480px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / 8%); padding: 12px 0; }
+      h1 { text-align: center; font-size: 1.1rem; padding: 12px; margin: 0; }
+      #status { text-align: center; font-size: 0.85rem; color: #444; padding: 6px; min-height: 22px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>Country picker preview</h1>
+        <country-picker data-cy="picker"></country-picker>
+        <div id="status" data-cy="status"></div>
+    </div>
+
+    <script type="module">
+      import './src/component/country-picker/index.js'
+
+      const picker = document.querySelector('country-picker')
+      const status = document.getElementById('status')
+
+      picker.addEventListener('country-selected', (e) => {
+        status.textContent = `Selected: ${e.detail.code} (${e.detail.name})`
+        status.dataset.code = e.detail.code
+      })
+
+      picker.addEventListener('country-cleared', () => {
+        status.textContent = 'Cleared'
+        delete status.dataset.code
+      })
+    </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import AlertService from '../../component/alert/alert'
 import '../../component/timer'
 import '../../component/street-view'
 import '../../component/guess-map'
+import '../../component/country-picker'
 import '../../component/result-map'
 import '../../component/leaderboard'
 import '../../component/game-over'
@@ -65,6 +66,19 @@ export class GameView extends LitElement {
       overflow-y: auto;
       max-height: 40%;
       border-bottom: 1px solid var(--borderColor, rgb(0 0 0 / 15%));
+    }
+
+    .game-sidebar__picker {
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--borderColor, rgb(0 0 0 / 15%));
+      background: #fafafa;
+      /* Stack the picker (and its dropdown) above the Leaflet map below.
+         Leaflet uses internal panes up to z-index ~700; an explicit higher
+         value ensures the dropdown paints above any map layer. Also,
+         isolate so this becomes a guaranteed stacking context. */
+      position: relative;
+      z-index: 1100;
+      isolation: isolate;
     }
 
     .game-sidebar__map {
@@ -440,6 +454,8 @@ export class GameView extends LitElement {
 
         const guessMap = this.renderRoot.querySelector('guess-map')
         if (guessMap) guessMap.reset()
+        const picker = this.renderRoot.querySelector('country-picker')
+        if (picker) picker.reset()
 
         const round = state.rounds?.[state.currentRound]
         if (round) {
@@ -516,6 +532,13 @@ export class GameView extends LitElement {
   }
 
   // ── Round actions ───────────────────────────────────────────
+
+  _onCountrySelected (e) {
+    const { code } = e.detail || {}
+    if (!code) return
+    const guessMap = this.renderRoot.querySelector('guess-map')
+    guessMap?.flyToCountry(code)
+  }
 
   async _onGuess (e) {
     const { lat, lng } = e.detail
@@ -835,6 +858,12 @@ export class GameView extends LitElement {
               room-id=${this.roomId || ''}
               @request-host=${this._requestHost}
             ></game-leaderboard>
+          </div>
+          <div class="game-sidebar__picker" ?hidden=${!showPicker}>
+            <country-picker
+              ?disabled=${!isPlaying || this._hasGuessed}
+              @country-selected=${this._onCountrySelected}
+            ></country-picker>
           </div>
           <div class="game-sidebar__map">
             <guess-map
